@@ -1,10 +1,14 @@
-const API_BASE_URL = "http://localhost:8080/api";
+import { apiClient } from "../../lib/apiClient";
+
+export type UserRole = "EMPLOYEE" | "EMPLOYER";
 
 export type RegisterPayload = {
-  fullName: string;
+  fullName?: string;
+  companyName?: string;
+  displayName?: string;
   email: string;
   password: string;
-  role: string;
+  role: UserRole;
 };
 
 export type LoginPayload = {
@@ -12,90 +16,84 @@ export type LoginPayload = {
   password: string;
 };
 
-async function parseErrorResponse(response: Response): Promise<never> {
-  let data: any = null;
+export type AuthResponse = {
+  userId: number;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  employeeProfileId: number | null;
+  employerProfileId: number | null;
+  message: string;
+};
 
-  try {
-    data = await response.json();
-  } catch {
-    throw new Error("Something went wrong. Please try again.");
-  }
-
-  /**
-   * Handles:
-   * {
-   *   "message": "Invalid credentials"
-   * }
-   */
-  if (typeof data.message === "string") {
-    throw new Error(data.message);
-  }
-
-  /**
-   * Handles your validation format:
-   * {
-   *   "message": {
-   *     "password": "Password must be at least 8 characters"
-   *   }
-   * }
-   */
+function getApiErrorMessage(error: unknown): string {
   if (
-    typeof data.message === "object" &&
-    data.message !== null &&
-    !Array.isArray(data.message)
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error
   ) {
-    const firstMessage = Object.values(data.message)[0];
+    const axiosError = error as {
+      response?: {
+        data?: any;
+      };
+    };
 
-    if (typeof firstMessage === "string") {
-      throw new Error(firstMessage);
+    const data = axiosError.response?.data;
+
+    if (typeof data?.message === "string") {
+      return data.message;
+    }
+
+    if (
+      typeof data?.message === "object" &&
+      data.message !== null &&
+      !Array.isArray(data.message)
+    ) {
+      const firstMessage = Object.values(data.message)[0];
+
+      if (typeof firstMessage === "string") {
+        return firstMessage;
+      }
+    }
+
+    if (typeof data === "object" && data !== null && !Array.isArray(data)) {
+      const firstError = Object.values(data)[0];
+
+      if (typeof firstError === "string") {
+        return firstError;
+      }
     }
   }
 
-  /**
-   * Handles:
-   * {
-   *   "password": "Password must be at least 8 characters"
-   * }
-   */
-  if (typeof data === "object" && data !== null && !Array.isArray(data)) {
-    const firstError = Object.values(data)[0];
-
-    if (typeof firstError === "string") {
-      throw new Error(firstError);
-    }
-  }
-
-  throw new Error("Request failed. Please check your input.");
+  return "Something went wrong. Please try again.";
 }
 
-export async function registerUser(payload: RegisterPayload) {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+export async function registerUser(
+  payload: RegisterPayload
+): Promise<AuthResponse> {
+  try {
+    const response = await apiClient.post<AuthResponse>(
+      "/auth/register",
+      payload
+    );
 
-  if (!response.ok) {
-    await parseErrorResponse(response);
+    return response.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
   }
-
-  return response.json();
 }
 
-export async function loginUser(payload: LoginPayload) {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+export async function loginUser(
+  payload: LoginPayload
+): Promise<AuthResponse> {
+  try {
+    const response = await apiClient.post<AuthResponse>(
+      "/auth/login",
+      payload
+    );
 
-  if (!response.ok) {
-    await parseErrorResponse(response);
+    return response.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
   }
-
-  return response.json();
 }
