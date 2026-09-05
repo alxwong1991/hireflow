@@ -1,10 +1,10 @@
-package com.jobtracker.backend;
+package com.example.hireflow;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class BackendApplicationTests {
+class HireflowApplicationTests {
 
 	@Test
 	void contextLoads() {

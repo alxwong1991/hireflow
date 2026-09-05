@@ -1,14 +1,13 @@
-package com.jobtracker.backend;
+package com.example.hireflow;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class BackendApplication {
+public class HireflowApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(BackendApplication.class, args);
-		System.out.println("hihihi");
+		SpringApplication.run(HireflowApplication.class, args);
 	}
 
 }
