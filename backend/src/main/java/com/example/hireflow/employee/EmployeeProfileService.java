@@ -3,6 +3,7 @@ package com.example.hireflow.employee;
 import org.springframework.stereotype.Service;
 
 import com.example.hireflow.employee.dto.EmployeeProfileResponse;
+import com.example.hireflow.employee.dto.EmployeeProfileUpdateRequest;
 
 @Service
 public class EmployeeProfileService {
@@ -34,6 +35,42 @@ public class EmployeeProfileService {
                 profile.getPhone(),
                 profile.getLocation(),
                 profile.getSummary()
+        );
+    }
+
+    public EmployeeProfileUpdateRequest updateEmployeeProfile(Long id, EmployeeProfileUpdateRequest request) {
+        EmployeeProfile profile = employeeProfileRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Employee profile not found"));
+
+        profile.setPhone(request.phone());
+        profile.setLocation(request.location());
+        profile.setSummary(request.summary());
+
+        employeeProfileRepository.save(profile);
+
+        return request;
+    }
+
+    public EmployeeProfileUpdateRequest amendEmployeeProfile(Long id, EmployeeProfileUpdateRequest request) {
+        EmployeeProfile profile = employeeProfileRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Employee profile not found"));
+
+        if (request.phone() != null && !request.phone().isBlank()) {
+            profile.setPhone(request.phone());
+        }
+        if (request.location() != null && !request.location().isBlank()) {
+            profile.setLocation(request.location());
+        }
+        if (request.summary() != null && !request.summary().isBlank()) {
+            profile.setSummary(request.summary());
+        }
+
+        EmployeeProfile updatedProfile = employeeProfileRepository.save(profile);
+
+        return new EmployeeProfileUpdateRequest(
+            updatedProfile.getPhone(),
+            updatedProfile.getLocation(),
+            updatedProfile.getSummary()
         );
     }
 }

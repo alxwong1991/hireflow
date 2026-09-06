@@ -41,7 +41,6 @@ function RegisterPage() {
 
   async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-
     setNameError("");
     setCompanyNameError("");
     setEmailError("");
@@ -89,18 +88,17 @@ function RegisterPage() {
 
     try {
       setIsSubmitting(true);
-
       const data = await registerUser({
         email: email.trim(),
         password,
         role,
 
         // For navbar/login display name
-        displayName: role === "EMPLOYEE" ? fullName.trim() : companyName.trim(),
+        displayName:role === "EMPLOYEE" ? fullName.trim() : companyName.trim(),
 
         // Role-specific fields
-        fullName: role === "EMPLOYEE" ? fullName.trim() : null,
-        companyName: role === "EMPLOYER" ? companyName.trim() : null,
+        // fullName: role === "EMPLOYEE" ? fullName.trim() : null,
+        // companyName: role === "EMPLOYER" ? companyName.trim() : null,
       });
 
       console.log("Registration success:", data);
@@ -112,6 +110,7 @@ function RegisterPage() {
       setEmail("");
       setPassword("");
       setRole("");
+      window.location.href = "/login";
     } catch (error) {
       if (error instanceof Error) {
         setSubmitError(error.message);
