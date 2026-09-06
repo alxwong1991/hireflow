@@ -4,11 +4,14 @@ import { registerUser } from "../authApi";
 
 function RegisterPage() {
   const [fullName, setFullName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
 
   const [nameError, setNameError] = useState("");
+  const [companyNameError, setCompanyNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [roleError, setRoleError] = useState("");
@@ -21,10 +24,26 @@ function RegisterPage() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 
+  function handleRoleChange(value: string) {
+    setRole(value);
+
+    setNameError("");
+    setCompanyNameError("");
+
+    if (value === "EMPLOYEE") {
+      setCompanyName("");
+    }
+
+    if (value === "EMPLOYER") {
+      setFullName("");
+    }
+  }
+
   async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
 
     setNameError("");
+    setCompanyNameError("");
     setEmailError("");
     setPasswordError("");
     setRoleError("");
@@ -33,8 +52,18 @@ function RegisterPage() {
 
     let isValid = true;
 
-    if (!fullName.trim()) {
+    if (!role) {
+      setRoleError("Please select a role.");
+      isValid = false;
+    }
+
+    if (role === "EMPLOYEE" && !fullName.trim()) {
       setNameError("Full name is required.");
+      isValid = false;
+    }
+
+    if (role === "EMPLOYER" && !companyName.trim()) {
+      setCompanyNameError("Company name is required.");
       isValid = false;
     }
 
@@ -54,11 +83,6 @@ function RegisterPage() {
       isValid = false;
     }
 
-    if (!role) {
-      setRoleError("Please select a role.");
-      isValid = false;
-    }
-
     if (!isValid) {
       return;
     }
@@ -67,10 +91,16 @@ function RegisterPage() {
       setIsSubmitting(true);
 
       const data = await registerUser({
-        fullName: fullName.trim(),
         email: email.trim(),
         password,
         role,
+
+        // For navbar/login display name
+        displayName: role === "EMPLOYEE" ? fullName.trim() : companyName.trim(),
+
+        // Role-specific fields
+        fullName: role === "EMPLOYEE" ? fullName.trim() : null,
+        companyName: role === "EMPLOYER" ? companyName.trim() : null,
       });
 
       console.log("Registration success:", data);
@@ -78,6 +108,7 @@ function RegisterPage() {
       setSubmitSuccess("Account created successfully. You can now log in.");
 
       setFullName("");
+      setCompanyName("");
       setEmail("");
       setPassword("");
       setRole("");
@@ -103,16 +134,48 @@ function RegisterPage() {
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           <div className="form-field">
-            <label htmlFor="fullName">Full name</label>
-            <input
-              id="fullName"
-              type="text"
-              placeholder="Your full name"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-            />
-            {nameError && <p className="form-error">{nameError}</p>}
+            <label htmlFor="role">I am a</label>
+            <select
+              id="role"
+              value={role}
+              onChange={(event) => handleRoleChange(event.target.value)}
+            >
+              <option value="">Select role</option>
+              <option value="EMPLOYEE">Employee</option>
+              <option value="EMPLOYER">Employer</option>
+            </select>
+            {roleError && <p className="form-error">{roleError}</p>}
           </div>
+
+          {role === "EMPLOYEE" && (
+            <div className="form-field">
+              <label htmlFor="fullName">Full name</label>
+              <input
+                id="fullName"
+                type="text"
+                placeholder="Your full name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+              />
+              {nameError && <p className="form-error">{nameError}</p>}
+            </div>
+          )}
+
+          {role === "EMPLOYER" && (
+            <div className="form-field">
+              <label htmlFor="companyName">Company name</label>
+              <input
+                id="companyName"
+                type="text"
+                placeholder="Your company name"
+                value={companyName}
+                onChange={(event) => setCompanyName(event.target.value)}
+              />
+              {companyNameError && (
+                <p className="form-error">{companyNameError}</p>
+              )}
+            </div>
+          )}
 
           <div className="form-field">
             <label htmlFor="email">Email address</label>
@@ -136,20 +199,6 @@ function RegisterPage() {
               onChange={(event) => setPassword(event.target.value)}
             />
             {passwordError && <p className="form-error">{passwordError}</p>}
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="role">I am a</label>
-            <select
-              id="role"
-              value={role}
-              onChange={(event) => setRole(event.target.value)}
-            >
-              <option value="">Select role</option>
-              <option value="EMPLOYEE">Employee</option>
-              <option value="EMPLOYER">Employer</option>
-            </select>
-            {roleError && <p className="form-error">{roleError}</p>}
           </div>
 
           {submitError && <p className="form-alert error-alert">{submitError}</p>}

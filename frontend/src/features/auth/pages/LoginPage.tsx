@@ -53,8 +53,26 @@ function LoginPage() {
       });
 
       console.log("Login success:", data);
-
       setSubmitSuccess("Login successful.");
+
+      localStorage.setItem("userId", data.userId.toString());
+      localStorage.setItem("email", data.email);
+      localStorage.setItem("displayName", data.displayName);
+      localStorage.setItem("role", data.role);
+
+      if (data.employeeProfileId !== null) {
+        localStorage.setItem("employeeProfileId", String(data.employeeProfileId));
+      }
+
+      if (data.employerProfileId !== null) {
+        localStorage.setItem("employerProfileId", String(data.employerProfileId));
+      }
+
+      if (data.role === "EMPLOYEE") {
+        window.location.href = "/employee/profile";
+      } else if (data.role === "EMPLOYER") {
+        window.location.href = "/employer/profile";
+      }
 
       // Later we will store the token and redirect the user.
     } catch (error) {
