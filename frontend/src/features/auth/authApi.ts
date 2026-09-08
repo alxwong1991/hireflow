@@ -1,30 +1,7 @@
-import { apiClient } from "../../lib/apiClient";
-
-export type UserRole = "EMPLOYEE" | "EMPLOYER";
-
-export type RegisterPayload = {
-  fullName?: string;
-  companyName?: string;
-  displayName?: string;
-  email: string;
-  password: string;
-  role: UserRole;
-};
-
-export type LoginPayload = {
-  email: string;
-  password: string;
-};
-
-export type AuthResponse = {
-  userId: number;
-  email: string;
-  displayName: string;
-  role: UserRole;
-  employeeProfileId: number | null;
-  employerProfileId: number | null;
-  message: string;
-};
+import apiClient from "../../lib/apiClient";
+import type AuthResponse from "./types/authResponse";
+import type RegisterRequest from "./types/registerRequest";
+import type LoginRequest from "./types/loginRequest";
 
 function getApiErrorMessage(error: unknown): string {
   if (
@@ -69,7 +46,7 @@ function getApiErrorMessage(error: unknown): string {
 }
 
 export async function registerUser(
-  payload: RegisterPayload
+  payload: RegisterRequest
 ): Promise<AuthResponse> {
   try {
     const response = await apiClient.post<AuthResponse>(
@@ -84,7 +61,7 @@ export async function registerUser(
 }
 
 export async function loginUser(
-  payload: LoginPayload
+  payload: LoginRequest
 ): Promise<AuthResponse> {
   try {
     const response = await apiClient.post<AuthResponse>(

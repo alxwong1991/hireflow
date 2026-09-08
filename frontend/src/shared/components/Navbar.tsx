@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 
 function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [role, setRole] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -10,7 +11,7 @@ function Navbar() {
   useEffect(() => {
     setRole(localStorage.getItem("role"));
     setDisplayName(localStorage.getItem("displayName"));
-  }, []);
+  }, [location.pathname]);
 
   function handleLogout() {
     localStorage.removeItem("userId");

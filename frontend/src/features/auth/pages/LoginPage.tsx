@@ -1,5 +1,5 @@
 import { SubmitEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../authApi";
 
 function LoginPage() {
@@ -12,6 +12,7 @@ function LoginPage() {
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   function validateEmail(value: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -44,45 +45,75 @@ function LoginPage() {
       return;
     }
 
+    // try {
+    //   setIsSubmitting(true);
+
+    //   const data = await loginUser({
+    //     email: email.trim(),
+    //     password,
+    //   });
+
+    //   console.log("Login success:", data);
+    //   setSubmitSuccess("Login successful.");
+
+    //   localStorage.setItem("userId", data.userId.toString());
+    //   localStorage.setItem("email", data.email);
+    //   localStorage.setItem("displayName", data.displayName);
+    //   localStorage.setItem("role", data.role);
+
+    //   if (data.employeeProfileId !== null) {
+    //     localStorage.setItem("employeeProfileId", String(data.employeeProfileId));
+    //   }
+
+    //   if (data.employerProfileId !== null) {
+    //     localStorage.setItem("employerProfileId", String(data.employerProfileId));
+    //   }
+
+    //   if (data.role === "EMPLOYEE") {
+    //     window.location.href = "/employee/profile";
+    //   } else if (data.role === "EMPLOYER") {
+    //     window.location.href = "/employer/profile";
+    //   }
+
+    //   // Later we will store the token and redirect the user.
+    // } catch (error) {
+    //   if (error instanceof Error) {
+    //     setSubmitError(error.message);
+    //   } else {
+    //     setSubmitError("Something went wrong. Please try again.");
+    //   }
+    // } finally {
+    //   setIsSubmitting(false);
+    // }
+
     try {
       setIsSubmitting(true);
-
-      const data = await loginUser({
+      const userData = await loginUser({
         email: email.trim(),
         password,
       });
-
-      console.log("Login success:", data);
+      console.log("Login success:", userData);
       setSubmitSuccess("Login successful.");
 
-      localStorage.setItem("userId", data.userId.toString());
-      localStorage.setItem("email", data.email);
-      localStorage.setItem("displayName", data.displayName);
-      localStorage.setItem("role", data.role);
+      localStorage.setItem("userId", userData.userId.toString());
+      localStorage.setItem("email", userData.email);
+      localStorage.setItem("displayName", userData.displayName);
+      localStorage.setItem("role", userData.role);
 
-      if (data.employeeProfileId !== null) {
-        localStorage.setItem("employeeProfileId", String(data.employeeProfileId));
+      if (userData.employeeProfileId !== null) {
+        localStorage.setItem("employeeProfileId", String(userData.employeeProfileId));
+      }
+      if (userData.employerProfileId !== null) {
+        localStorage.setItem("employerProfileId", String(userData.employerProfileId));
       }
 
-      if (data.employerProfileId !== null) {
-        localStorage.setItem("employerProfileId", String(data.employerProfileId));
+      if (userData.role === "EMPLOYEE") {
+        navigate("/employee/profile");
+      } else if (userData.role === "EMPLOYER") {
+        navigate("/employer/profile");
       }
-
-      if (data.role === "EMPLOYEE") {
-        window.location.href = "/employee/profile";
-      } else if (data.role === "EMPLOYER") {
-        window.location.href = "/employer/profile";
-      }
-
-      // Later we will store the token and redirect the user.
     } catch (error) {
-      if (error instanceof Error) {
-        setSubmitError(error.message);
-      } else {
-        setSubmitError("Something went wrong. Please try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
+      console.error("Login error:", error);
     }
   }
 

@@ -1,5 +1,5 @@
 import { SubmitEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { registerUser } from "../authApi";
 
 function RegisterPage() {
@@ -86,37 +86,61 @@ function RegisterPage() {
       return;
     }
 
+    // try {
+    //   setIsSubmitting(true);
+    //   const data = await registerUser({
+    //     email: email.trim(),
+    //     password,
+    //     role,
+
+        
+    //     // For navbar/login display name
+    //     displayName:role === "EMPLOYEE" ? fullName.trim() : companyName.trim(),
+
+    //     // Role-specific fields
+    //     // fullName: role === "EMPLOYEE" ? fullName.trim() : null,
+    //     // companyName: role === "EMPLOYER" ? companyName.trim() : null,
+    //   });
+
+    //   console.log("Registration success:", data);
+
+    //   setSubmitSuccess("Account created successfully. You can now log in.");
+
+    //   setFullName("");
+    //   setCompanyName("");
+    //   setEmail("");
+    //   setPassword("");
+    //   setRole("");
+    //   window.location.href = "/login";
+    // } catch (error) {
+    //   if (error instanceof Error) {
+    //     setSubmitError(error.message);
+    //   } else {
+    //     setSubmitError("Something went wrong. Please try again.");
+    //   }
+    // } finally {
+    //   setIsSubmitting(false);
+    // }
+
     try {
       setIsSubmitting(true);
-      const data = await registerUser({
+      const userData = await registerUser({
         email: email.trim(),
         password,
-        role,
-
-        // For navbar/login display name
-        displayName:role === "EMPLOYEE" ? fullName.trim() : companyName.trim(),
-
-        // Role-specific fields
-        // fullName: role === "EMPLOYEE" ? fullName.trim() : null,
-        // companyName: role === "EMPLOYER" ? companyName.trim() : null,
+        role: role as "EMPLOYEE" | "EMPLOYER",
+        displayName: role === "EMPLOYEE" ? fullName.trim() : companyName.trim(),
+        fullName: role === "EMPLOYEE" ? fullName.trim() : undefined,
+        companyName: role === "EMPLOYER" ? companyName.trim() : undefined,
       });
-
-      console.log("Registration success:", data);
-
+      console.log("Registration success:", userData);
       setSubmitSuccess("Account created successfully. You can now log in.");
-
       setFullName("");
       setCompanyName("");
       setEmail("");
       setPassword("");
       setRole("");
-      window.location.href = "/login";
     } catch (error) {
-      if (error instanceof Error) {
-        setSubmitError(error.message);
-      } else {
-        setSubmitError("Something went wrong. Please try again.");
-      }
+      console.error("Registration error:", error);
     } finally {
       setIsSubmitting(false);
     }

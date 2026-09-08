@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import {
   getEmployeeProfile,
-  type EmployeeProfileResponse,
+  updateEmployeeProfile,
+  amendEmployeeProfile,
 } from "../employeeApi";
+import type EmployeeProfileResponse from "../types/employeeProfileResponse";
 
 function EmployeeProfilePage() {
   const [profile, setProfile] = useState<EmployeeProfileResponse | null>(null);
@@ -12,6 +14,7 @@ function EmployeeProfilePage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isUpdateProfile, setIsUpdateProfile] = useState(false);
 
   useEffect(() => {
     async function loadEmployeeProfile() {
@@ -37,10 +40,33 @@ function EmployeeProfilePage() {
         setIsLoading(false);
       }
     }
-
     loadEmployeeProfile();
   }, []);
 
+  const handleSaveProfile = async () => {
+    try {
+      const employeeProfileId = localStorage.getItem("employeeProfileId");
+      if (!employeeProfileId) {
+        setErrorMessage("No employee profile id found. Please login again.");
+        return;
+      }
+
+      const updatedPayload = { phone, location, summary };
+      let updatedData: EmployeeProfileResponse;
+
+      if (isUpdateProfile) {
+        updatedData = await amendEmployeeProfile(Number(employeeProfileId), updatedPayload);
+      } else {
+        updatedData = await updateEmployeeProfile(Number(employeeProfileId), updatedPayload);
+      }
+
+      setProfile(updatedData);
+      setIsUpdateProfile(true);
+    } catch (error) {
+      console.error("Failed to save employee profile:", error);
+      setErrorMessage("Failed to save employee profile.");
+    }
+  };
   if (isLoading) {
     return (
       <section className="profile-page">
@@ -78,11 +104,11 @@ function EmployeeProfilePage() {
 
         <h1 className="profile-title">{profile.fullName}</h1>
 
-        <p className="profile-description">
+        {/* <p className="profile-description">
           This page is currently only reading profile data from the backend.
           Phone, location, and summary are shown as input fields for the next
           update step.
-        </p>
+        </p> */}
 
         <div className="profile-form">
           <div className="form-field">
@@ -123,8 +149,8 @@ function EmployeeProfilePage() {
             />
           </div>
 
-          <button type="button" className="primary-button" disabled>
-            Save profile later
+          <button type="submit" className="primary-button" onClick={handleSaveProfile}>
+            Save profile
           </button>
         </div>
       </div>
