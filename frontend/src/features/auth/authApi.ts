@@ -74,3 +74,8 @@ export async function loginUser(
     throw new Error(getApiErrorMessage(error));
   }
 }
+
+export async function getCurrentUser(): Promise<AuthResponse> {
+  const response = await apiClient.get<AuthResponse>("/auth/me");
+  return response.data;
+}

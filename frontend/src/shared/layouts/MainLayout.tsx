@@ -3,10 +3,10 @@ import Navbar from "../components/Navbar";
 
 function MainLayout() {
   return (
-    <div className="app-shell">
+    <div className="min-h-screen">
       <Navbar />
 
-      <main className="main-content">
+      <main className="p-8 max-sm:p-5">
         <Outlet />
       </main>
     </div>

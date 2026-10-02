@@ -35,7 +35,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public User registerUser(RegisterRequest request) {
         String email = request.email().trim().toLowerCase();
 
         if (userRepository.existsByEmail(email)) {
@@ -57,16 +57,12 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        Long employeeProfileId = null;
-        Long employerProfileId = null;
-
         if (role == UserRole.EMPLOYEE) {
             EmployeeProfile profile = new EmployeeProfile();
             profile.setUser(savedUser);
             profile.setFullName(request.fullName().trim());
 
-            EmployeeProfile savedProfile = employeeProfileRepository.save(profile);
-            employeeProfileId = savedProfile.getId();
+            employeeProfileRepository.save(profile);
         }
 
         if (role == UserRole.EMPLOYER) {
@@ -74,22 +70,13 @@ public class AuthService {
             profile.setUser(savedUser);
             profile.setCompanyName(request.companyName().trim());
 
-            EmployerProfile savedProfile = employerProfileRepository.save(profile);
-            employerProfileId = savedProfile.getId();
+            employerProfileRepository.save(profile);
         }
         
-        return new AuthResponse(
-                savedUser.getId(),
-                savedUser.getEmail(),
-                savedUser.getDisplayName(),
-                savedUser.getRole().name(),
-                employeeProfileId,
-                employerProfileId,
-                "Registration successful"
-        );
+        return savedUser;
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public User authenticate(LoginRequest request) {
         String email = request.email().trim().toLowerCase();
 
         User user = userRepository.findByEmail(email)
@@ -108,22 +95,16 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid email or password");
         }
 
-        Long employeeProfileId = employeeProfileRepository.findByUserId(user.getId())
-                .map(EmployeeProfile::getId)
-                .orElse(null);
+        return user;
+    }
 
-        Long employerProfileId = employerProfileRepository.findByUserId(user.getId())
-                .map(EmployerProfile::getId)
-                .orElse(null);
-
+    public AuthResponse toAuthResponse(User user, String token, String message) {
         return new AuthResponse(
-                user.getId(),
+                token,
                 user.getEmail(),
                 user.getDisplayName(),
                 user.getRole().name(),
-                employeeProfileId,
-                employerProfileId,
-                "Login successful"
+                message
         );
     }
 

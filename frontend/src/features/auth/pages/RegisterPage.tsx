@@ -1,8 +1,10 @@
-import { SubmitEvent, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { useState } from "react";
+import type { SubmitEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../authApi";
 
 function RegisterPage() {
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
 
@@ -94,7 +96,7 @@ function RegisterPage() {
     //     role,
 
         
-    //     // For navbar/login display name
+    //     // For sticky top-0 z-10 flex min-h-[76px] w-full items-center justify-between border-b border-slate-400/20 bg-slate-950/75 px-8 backdrop-blur-[18px] max-sm:h-auto max-sm:flex-col max-sm:items-start max-sm:gap-4 max-sm:p-4/login display name
     //     displayName:role === "EMPLOYEE" ? fullName.trim() : companyName.trim(),
 
     //     // Role-specific fields
@@ -124,7 +126,7 @@ function RegisterPage() {
 
     try {
       setIsSubmitting(true);
-      const userData = await registerUser({
+      await registerUser({
         email: email.trim(),
         password,
         role: role as "EMPLOYEE" | "EMPLOYER",
@@ -132,31 +134,30 @@ function RegisterPage() {
         fullName: role === "EMPLOYEE" ? fullName.trim() : undefined,
         companyName: role === "EMPLOYER" ? companyName.trim() : undefined,
       });
-      console.log("Registration success:", userData);
-      setSubmitSuccess("Account created successfully. You can now log in.");
-      setFullName("");
-      setCompanyName("");
-      setEmail("");
-      setPassword("");
-      setRole("");
+      navigate("/login", {
+        replace: true,
+        state: { registrationSuccess: "Account created successfully. You can now log in." },
+      });
     } catch (error) {
-      console.error("Registration error:", error);
+      setSubmitError(
+        error instanceof Error ? error.message : "Unable to register. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <section className="auth-page">
-      <div className="auth-card">
-        <div className="auth-header">
-          <p className="eyebrow">Create account</p>
+    <section className="flex min-h-[calc(100vh-140px)] items-center justify-center">
+      <div className="w-full max-w-[460px] rounded-[28px] border border-slate-400/25 bg-slate-900/90 p-8 shadow-[0_30px_100px_rgb(0_0_0/45%)] max-sm:rounded-[22px] max-sm:p-6">
+        <div className="mb-6">
+          <p className="m-0 mb-3.5 text-sm font-black uppercase tracking-[.14em] text-sky-400">Create account</p>
           <h1>Join HireFlow</h1>
           <p>Create an account as an employee or employer.</p>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit} noValidate>
-          <div className="form-field">
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
+          <div className="flex flex-col gap-[7px]">
             <label htmlFor="role">I am a</label>
             <select
               id="role"
@@ -167,11 +168,11 @@ function RegisterPage() {
               <option value="EMPLOYEE">Employee</option>
               <option value="EMPLOYER">Employer</option>
             </select>
-            {roleError && <p className="form-error">{roleError}</p>}
+            {roleError && <p className="m-0 text-[13px] font-bold text-red-400">{roleError}</p>}
           </div>
 
           {role === "EMPLOYEE" && (
-            <div className="form-field">
+            <div className="flex flex-col gap-[7px]">
               <label htmlFor="fullName">Full name</label>
               <input
                 id="fullName"
@@ -180,12 +181,12 @@ function RegisterPage() {
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
               />
-              {nameError && <p className="form-error">{nameError}</p>}
+              {nameError && <p className="m-0 text-[13px] font-bold text-red-400">{nameError}</p>}
             </div>
           )}
 
           {role === "EMPLOYER" && (
-            <div className="form-field">
+            <div className="flex flex-col gap-[7px]">
               <label htmlFor="companyName">Company name</label>
               <input
                 id="companyName"
@@ -195,12 +196,12 @@ function RegisterPage() {
                 onChange={(event) => setCompanyName(event.target.value)}
               />
               {companyNameError && (
-                <p className="form-error">{companyNameError}</p>
+                <p className="m-0 text-[13px] font-bold text-red-400">{companyNameError}</p>
               )}
             </div>
           )}
 
-          <div className="form-field">
+          <div className="flex flex-col gap-[7px]">
             <label htmlFor="email">Email address</label>
             <input
               id="email"
@@ -209,10 +210,10 @@ function RegisterPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-            {emailError && <p className="form-error">{emailError}</p>}
+            {emailError && <p className="m-0 text-[13px] font-bold text-red-400">{emailError}</p>}
           </div>
 
-          <div className="form-field">
+          <div className="flex flex-col gap-[7px]">
             <label htmlFor="password">Password</label>
             <input
               id="password"
@@ -221,24 +222,24 @@ function RegisterPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-            {passwordError && <p className="form-error">{passwordError}</p>}
+            {passwordError && <p className="m-0 text-[13px] font-bold text-red-400">{passwordError}</p>}
           </div>
 
-          {submitError && <p className="form-alert error-alert">{submitError}</p>}
+          {submitError && <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-red-500/30 bg-red-500/12 text-red-200">{submitError}</p>}
 
           {submitSuccess && (
-            <p className="form-alert success-alert">{submitSuccess}</p>
+            <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-green-500/30 bg-green-500/12 text-green-200">{submitSuccess}</p>
           )}
 
           <button
             type="submit"
-            className="primary-button full-width"
+            className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-[14px] bg-linear-to-br from-blue-600 to-teal-500 px-[22px] font-black text-white shadow-[0_16px_40px_rgb(37_99_235/35%)] transition duration-200 hover:-translate-y-px hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-65 disabled:transform-none disabled:brightness-100 mt-1 w-full"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Creating account..." : "Register"}
           </button>
 
-          <p className="auth-switch-text">
+          <p className="mt-0.5 text-center text-sm text-slate-400">
             Already have an account? <Link to="/login">Login</Link>
           </p>
         </form>

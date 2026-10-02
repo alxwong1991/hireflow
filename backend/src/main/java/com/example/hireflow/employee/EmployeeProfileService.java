@@ -13,17 +13,17 @@ public class EmployeeProfileService {
         this.employeeProfileRepository = employeeProfileRepository;
     }
 
-    public EmployeeProfileResponse getEmployeeProfile(Long id) {
-        EmployeeProfile profile = employeeProfileRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Employee profile not found"));
+    // public EmployeeProfileResponse getEmployeeProfile(Long id) {
+    //     EmployeeProfile profile = employeeProfileRepository.findById(id)
+    //         .orElseThrow(() -> new IllegalArgumentException("Employee profile not found"));
         
-        return new EmployeeProfileResponse(
-            profile.getFullName(),
-            profile.getPhone(),
-            profile.getLocation(),
-            profile.getSummary()
-        );
-    }
+    //     return new EmployeeProfileResponse(
+    //         profile.getFullName(),
+    //         profile.getPhone(),
+    //         profile.getLocation(),
+    //         profile.getSummary()
+    //     );
+    // }
 
     // For later use with JWT Authentication: Get employee profile by user ID
     public EmployeeProfileResponse getEmployeeProfileByUserId(Long userId) {
@@ -38,20 +38,20 @@ public class EmployeeProfileService {
         );
     }
 
-    public EmployeeProfileUpdateRequest updateEmployeeProfile(Long id, EmployeeProfileUpdateRequest request) {
+    public EmployeeProfileResponse updateEmployeeProfile(Long id, EmployeeProfileUpdateRequest request) {
         EmployeeProfile profile = employeeProfileRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Employee profile not found"));
-
+        .orElseThrow(() -> new IllegalArgumentException("Employee profile not found"));
         profile.setPhone(request.phone());
         profile.setLocation(request.location());
         profile.setSummary(request.summary());
-
-        employeeProfileRepository.save(profile);
-
-        return request;
+        return toResponse(employeeProfileRepository.save(profile));
     }
 
-    public EmployeeProfileUpdateRequest amendEmployeeProfile(Long id, EmployeeProfileUpdateRequest request) {
+    public EmployeeProfileResponse updateEmployeeProfileByUserId(Long userId, EmployeeProfileUpdateRequest request) {
+        return updateEmployeeProfile(requireProfile(userId).getId(), request);
+    }
+
+    public EmployeeProfileResponse amendEmployeeProfile(Long id, EmployeeProfileUpdateRequest request) {
         EmployeeProfile profile = employeeProfileRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Employee profile not found"));
 
@@ -67,10 +67,24 @@ public class EmployeeProfileService {
 
         EmployeeProfile updatedProfile = employeeProfileRepository.save(profile);
 
-        return new EmployeeProfileUpdateRequest(
-            updatedProfile.getPhone(),
-            updatedProfile.getLocation(),
-            updatedProfile.getSummary()
+        return toResponse(updatedProfile);
+    }
+
+    public EmployeeProfileResponse amendEmployeeProfileByUserId(Long userId, EmployeeProfileUpdateRequest request) {
+        return amendEmployeeProfile(requireProfile(userId).getId(), request);
+    }
+
+    private EmployeeProfile requireProfile(Long userId) {
+        return employeeProfileRepository.findByUserId(userId)
+            .orElseThrow(() -> new IllegalArgumentException("Employee profile not found for user"));
+    }
+
+    private EmployeeProfileResponse toResponse(EmployeeProfile profile) {
+        return new EmployeeProfileResponse(
+            profile.getFullName(),
+            profile.getPhone(),
+            profile.getLocation(),
+            profile.getSummary()
         );
     }
 }

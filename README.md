@@ -76,6 +76,92 @@ podman compose version
 
 Follow these steps to run the project on a new local machine.
 
+## Job and Application Workflow
+
+HireFlow supports two role-specific workflows:
+
+- Employers can create job listings and review all jobs created by their company.
+- Employers can see applicant counts, review profiles and cover letters, and update each application to applied, reviewing, shortlisted, accepted, or rejected.
+- Employees can browse open jobs, view job details, submit one immutable application per job, and review their submitted cover letters.
+- Visitors can browse open jobs but must log in with an employee account to apply.
+- Authentication uses a single 24-hour JWT returned by the login or registration API. Protected endpoints derive identity and role from the bearer token.
+- TanStack React Query manages server state while Auth Context exposes the current signed-in user.
+
+The main frontend routes are:
+
+```text
+/jobs                   Open job listings
+/jobs/:jobId            Job details and employee application form
+/employer/jobs          Employer job dashboard
+/employer/jobs/new      Job creation form
+/employer/jobs/:jobId/applications  Employer applicant review
+/employee/applications  Employee application history
+```
+
+The corresponding backend endpoints are:
+
+```text
+GET  /api/jobs
+GET  /api/jobs/{jobId}
+POST /api/employer/jobs
+GET  /api/employer/jobs
+GET  /api/employer/jobs/{jobId}/applications
+PATCH /api/employer/jobs/{jobId}/applications/{applicationId}/status
+POST /api/employee/jobs/{jobId}/applications
+GET  /api/employee/applications
+GET  /api/employee/profile
+POST /api/employee/profile
+PATCH /api/employee/profile
+GET  /api/employer/profile
+POST /api/employer/profile
+PATCH /api/employer/profile
+```
+
+Profile endpoints identify the current user from the JWT. Do not add a user ID,
+`/update`, or `/amend` suffix to these URLs.
+
+Authentication endpoints:
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+```
+
+To test with Postman:
+
+```text
+1. POST http://localhost:8080/api/auth/login with:
+   {
+     "email": "user@example.com",
+     "password": "your-password"
+   }
+2. Copy the token property from the JSON response.
+3. In Postman, select Authorization > Bearer Token and paste the token.
+4. Call an endpoint for that user's role.
+```
+
+Each employee or employer login returns that user's own signed token:
+
+```json
+{
+  "token": "<jwt-token>",
+  "email": "user@example.com",
+  "displayName": "Example User",
+  "role": "EMPLOYEE",
+  "message": "Login successful"
+}
+```
+
+For production, set a unique secret of at least 32 bytes:
+
+```text
+JWT_SECRET=<strong-random-secret>
+JWT_EXPIRATION_MS=86400000
+```
+
+Job creation validates required fields, employment type, non-negative salary values, and salary range order. Applications are accepted only for open jobs, require a cover letter, and reject duplicate applications by the same employee.
+
 ---
 
 ## 1. Clone the Repository

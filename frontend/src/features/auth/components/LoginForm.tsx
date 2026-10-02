@@ -17,8 +17,8 @@ function LoginForm() {
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <div className="form-field">
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      <div className="flex flex-col gap-[7px]">
         <label htmlFor="login-email">Email</label>
         <input
           id="login-email"
@@ -30,7 +30,7 @@ function LoginForm() {
         />
       </div>
 
-      <div className="form-field">
+      <div className="flex flex-col gap-[7px]">
         <label htmlFor="login-password">Password</label>
         <input
           id="login-password"
@@ -42,11 +42,11 @@ function LoginForm() {
         />
       </div>
 
-      <button type="submit" className="primary-button full-width">
+      <button type="submit" className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-[14px] bg-linear-to-br from-blue-600 to-teal-500 px-[22px] font-black text-white shadow-[0_16px_40px_rgb(37_99_235/35%)] transition duration-200 hover:-translate-y-px hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-65 disabled:transform-none disabled:brightness-100 mt-1 w-full">
         Login
       </button>
 
-      <p className="auth-switch-text">
+      <p className="mt-0.5 text-center text-sm text-slate-400">
         Not a user?{" "}
         <Link to="/register">
           Register

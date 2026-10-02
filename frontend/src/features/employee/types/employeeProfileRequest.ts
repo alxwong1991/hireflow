@@ -1,7 +1,5 @@
-type EmployeeProfileRequest = {
+export default interface EmployeeProfileRequest {
     phone: string | null;
     location: string | null;
     summary: string | null;
 }
-
-export default EmployeeProfileRequest;

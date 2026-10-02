@@ -1,7 +1,9 @@
 package com.example.hireflow.employee;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
+import com.example.hireflow.auth.CurrentUserService;
 import com.example.hireflow.employee.dto.EmployeeProfileResponse;
 import com.example.hireflow.employee.dto.EmployeeProfileUpdateRequest;
 
@@ -9,23 +11,33 @@ import com.example.hireflow.employee.dto.EmployeeProfileUpdateRequest;
 @RequestMapping("/api/employee")
 public class EmployeeProfileController {
     private final EmployeeProfileService employeeProfileService;
+    private final CurrentUserService currentUserService;
 
-    public EmployeeProfileController(EmployeeProfileService employeeProfileService) {
+    public EmployeeProfileController(EmployeeProfileService employeeProfileService, CurrentUserService currentUserService) {
         this.employeeProfileService = employeeProfileService;
+        this.currentUserService = currentUserService;
     }
 
-    @GetMapping("/profile/{id}")
-    public EmployeeProfileResponse getEmployeeProfile(@PathVariable Long id) {
-        return employeeProfileService.getEmployeeProfile(id);
+    @GetMapping("/profile")
+    public EmployeeProfileResponse getEmployeeProfile(Authentication authentication) {
+        return employeeProfileService.getEmployeeProfileByUserId(
+            currentUserService.requireUser(authentication).getId()
+        );
     }
 
-    @PostMapping("/profile/{id}/update")
-    public EmployeeProfileUpdateRequest updateEmployeeProfile(@PathVariable Long id, @RequestBody EmployeeProfileUpdateRequest request) {
-        return employeeProfileService.updateEmployeeProfile(id, request);
+    @PostMapping("/profile")
+    public EmployeeProfileResponse updateEmployeeProfile(Authentication authentication, @RequestBody EmployeeProfileUpdateRequest request) {
+        return employeeProfileService.updateEmployeeProfileByUserId(
+            currentUserService.requireUser(authentication).getId(),
+            request
+        );
     }
 
-    @PatchMapping("/profile/{id}/amend")
-    public EmployeeProfileUpdateRequest amendEmployeeProfile(@PathVariable Long id,@RequestBody EmployeeProfileUpdateRequest request) {
-        return employeeProfileService.amendEmployeeProfile(id, request);
+    @PatchMapping("/profile")
+    public EmployeeProfileResponse amendEmployeeProfile(Authentication authentication, @RequestBody EmployeeProfileUpdateRequest request) {
+        return employeeProfileService.amendEmployeeProfileByUserId(
+            currentUserService.requireUser(authentication).getId(),
+            request
+        );
     }
 }

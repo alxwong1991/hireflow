@@ -1,161 +1,75 @@
-import { useEffect, useState } from "react";
-import {
-  getEmployeeProfile,
-  updateEmployeeProfile,
-  amendEmployeeProfile,
-} from "../employeeApi";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { getEmployeeProfile, updateEmployeeProfile } from "../employeeApi";
 import type EmployeeProfileResponse from "../types/employeeProfileResponse";
 
-function EmployeeProfilePage() {
-  const [profile, setProfile] = useState<EmployeeProfileResponse | null>(null);
-  const [phone, setPhone] = useState("");
-  const [location, setLocation] = useState("");
-  const [summary, setSummary] = useState("");
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isUpdateProfile, setIsUpdateProfile] = useState(false);
-
-  useEffect(() => {
-    async function loadEmployeeProfile() {
-      try {
-        const employeeProfileId = localStorage.getItem("employeeProfileId");
-
-        if (!employeeProfileId) {
-          setErrorMessage("No employee profile id found. Please login again.");
-          return;
-        }
-
-        const data = await getEmployeeProfile(Number(employeeProfileId));
-
-        setProfile(data);
-
-        setPhone(data.phone ?? "");
-        setLocation(data.location ?? "");
-        setSummary(data.summary ?? "");
-      } catch (error) {
-        console.error("Failed to load employee profile:", error);
-        setErrorMessage("Failed to load employee profile.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadEmployeeProfile();
-  }, []);
-
-  const handleSaveProfile = async () => {
-    try {
-      const employeeProfileId = localStorage.getItem("employeeProfileId");
-      if (!employeeProfileId) {
-        setErrorMessage("No employee profile id found. Please login again.");
-        return;
-      }
-
-      const updatedPayload = { phone, location, summary };
-      let updatedData: EmployeeProfileResponse;
-
-      if (isUpdateProfile) {
-        updatedData = await amendEmployeeProfile(Number(employeeProfileId), updatedPayload);
-      } else {
-        updatedData = await updateEmployeeProfile(Number(employeeProfileId), updatedPayload);
-      }
-
-      setProfile(updatedData);
-      setIsUpdateProfile(true);
-    } catch (error) {
-      console.error("Failed to save employee profile:", error);
-      setErrorMessage("Failed to save employee profile.");
-    }
-  };
-  if (isLoading) {
-    return (
-      <section className="profile-page">
-        <div className="profile-card">
-          <p>Loading employee profile...</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (errorMessage) {
-    return (
-      <section className="profile-page">
-        <div className="profile-card">
-          <p className="form-error">{errorMessage}</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <section className="profile-page">
-        <div className="profile-card">
-          <p>No employee profile found.</p>
-        </div>
-      </section>
-    );
-  }
+function EmployeeProfileForm({ profile }: { profile: EmployeeProfileResponse }) {
+  const queryClient = useQueryClient();
+  const [phone, setPhone] = useState(profile.phone ?? "");
+  const [location, setLocation] = useState(profile.location ?? "");
+  const [summary, setSummary] = useState(profile.summary ?? "");
+  const mutation = useMutation({
+    mutationFn: updateEmployeeProfile,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["profile", "employee"], updated);
+    },
+  });
 
   return (
-    <section className="profile-page">
-      <div className="profile-card">
-        <p className="eyebrow">Employee Profile</p>
+    <div className="w-full max-w-[720px] rounded-[28px] border border-slate-400/25 bg-slate-900/90 p-8 shadow-[0_30px_100px_rgb(0_0_0/45%)] max-sm:rounded-[22px] max-sm:p-6">
+      <p className="m-0 mb-3.5 text-sm font-black uppercase tracking-[.14em] text-sky-400">Employee Profile</p>
+      <h1 className="my-2 mb-3 text-[32px] leading-tight tracking-[-.04em] text-white max-sm:text-[28px]">{profile.fullName}</h1>
 
-        <h1 className="profile-title">{profile.fullName}</h1>
-
-        {/* <p className="profile-description">
-          This page is currently only reading profile data from the backend.
-          Phone, location, and summary are shown as input fields for the next
-          update step.
-        </p> */}
-
-        <div className="profile-form">
-          <div className="form-field">
-            <label htmlFor="fullName">Full name</label>
-            <input id="fullName" type="text" value={profile.fullName} disabled />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="phone">Phone</label>
-            <input
-              id="phone"
-              type="text"
-              placeholder="Add your phone number later"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-            />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="location">Location</label>
-            <input
-              id="location"
-              type="text"
-              placeholder="Add your location later"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-            />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="summary">Summary</label>
-            <textarea
-              id="summary"
-              placeholder="Add your profile summary later"
-              value={summary}
-              onChange={(event) => setSummary(event.target.value)}
-              rows={4}
-            />
-          </div>
-
-          <button type="submit" className="primary-button" onClick={handleSaveProfile}>
-            Save profile
-          </button>
+      <div className="grid gap-[18px]">
+        <div className="flex flex-col gap-[7px]">
+          <label htmlFor="fullName">Full name</label>
+          <input id="fullName" type="text" value={profile.fullName} disabled />
         </div>
+        <div className="flex flex-col gap-[7px]">
+          <label htmlFor="phone">Phone</label>
+          <input id="phone" value={phone} onChange={(event) => setPhone(event.target.value)} />
+        </div>
+        <div className="flex flex-col gap-[7px]">
+          <label htmlFor="location">Location</label>
+          <input id="location" value={location} onChange={(event) => setLocation(event.target.value)} />
+        </div>
+        <div className="flex flex-col gap-[7px]">
+          <label htmlFor="summary">Summary</label>
+          <textarea id="summary" value={summary} onChange={(event) => setSummary(event.target.value)} rows={4} />
+        </div>
+        {mutation.error && (
+          <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-red-500/30 bg-red-500/12 text-red-200">
+            {mutation.error instanceof Error ? mutation.error.message : "Failed to save employee profile."}
+          </p>
+        )}
+        {mutation.isSuccess && <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-green-500/30 bg-green-500/12 text-green-200">Profile saved.</p>}
+        <button
+          type="button"
+          className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-[14px] bg-linear-to-br from-blue-600 to-teal-500 px-[22px] font-black text-white shadow-[0_16px_40px_rgb(37_99_235/35%)] transition duration-200 hover:-translate-y-px hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-65 disabled:transform-none disabled:brightness-100"
+          disabled={mutation.isPending}
+          onClick={() => mutation.mutate({ phone, location, summary })}
+        >
+          {mutation.isPending ? "Saving..." : "Save profile"}
+        </button>
       </div>
-    </section>
+    </div>
   );
+}
+
+function EmployeeProfilePage() {
+  const { data: profile, isLoading, error } = useQuery({
+    queryKey: ["profile", "employee"],
+    queryFn: getEmployeeProfile,
+  });
+
+  if (isLoading) {
+    return <section className="flex min-h-[calc(100vh-140px)] items-start justify-center py-12"><div className="w-full max-w-[720px] rounded-[28px] border border-slate-400/25 bg-slate-900/90 p-8 shadow-[0_30px_100px_rgb(0_0_0/45%)] max-sm:rounded-[22px] max-sm:p-6"><p>Loading employee profile...</p></div></section>;
+  }
+  if (error || !profile) {
+    return <section className="flex min-h-[calc(100vh-140px)] items-start justify-center py-12"><div className="w-full max-w-[720px] rounded-[28px] border border-slate-400/25 bg-slate-900/90 p-8 shadow-[0_30px_100px_rgb(0_0_0/45%)] max-sm:rounded-[22px] max-sm:p-6"><p className="m-0 text-[13px] font-bold text-red-400">Failed to load employee profile.</p></div></section>;
+  }
+  return <section className="flex min-h-[calc(100vh-140px)] items-start justify-center py-12"><EmployeeProfileForm profile={profile} /></section>;
 }
 
 export default EmployeeProfilePage;
