@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { SubmitEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../authApi";
 import { useAuth } from "../authContextValue";
+import { showErrorAlert, showSuccessAlert } from "../../../shared/utils/alerts";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,14 +12,9 @@ function LoginPage() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
-  const [submitError, setSubmitError] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
   const { setUser } = useAuth();
-  const registrationSuccess =
-    (location.state as { registrationSuccess?: string } | null)?.registrationSuccess ?? "";
 
   function validateEmail(value: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -29,9 +25,6 @@ function LoginPage() {
 
     setEmailError("");
     setPasswordError("");
-    setSubmitError("");
-    setSubmitSuccess("");
-
     let isValid = true;
 
     if (!email.trim()) {
@@ -57,8 +50,8 @@ function LoginPage() {
         email: email.trim(),
         password,
       });
+      await showSuccessAlert("You are now signed in.", "Login successful");
       setUser(userData);
-      setSubmitSuccess("Login successful.");
 
       if (userData.role === "EMPLOYEE") {
         navigate("/employee/profile");
@@ -66,14 +59,10 @@ function LoginPage() {
         navigate("/employer/profile");
       }
 
-      // function clearRegistrationMessage() {
-      //   if (registrationSuccess) {
-      //     navigate("/login", { replace: true, state: null });
-      //   }
-      // }
     } catch (error) {
-      setSubmitError(
+      await showErrorAlert(
         error instanceof Error ? error.message : "Unable to log in. Please try again.",
+        "Login failed",
       );
     } finally {
       setIsSubmitting(false);
@@ -97,10 +86,7 @@ function LoginPage() {
               type="email"
               placeholder="you@example.com"
               value={email}
-              onChange={(event) => {
-                // clearRegistrationMessage();
-                setEmail(event.target.value);
-              }}
+              onChange={(event) => setEmail(event.target.value)}
             />
             {emailError && <p className="m-0 text-[13px] font-bold text-red-400">{emailError}</p>}
           </div>
@@ -112,21 +98,10 @@ function LoginPage() {
               type="password"
               placeholder="Enter your password"
               value={password}
-              onChange={(event) => {
-                // clearRegistrationMessage();
-                setPassword(event.target.value);
-              }}
+              onChange={(event) => setPassword(event.target.value)}
             />
             {passwordError && <p className="m-0 text-[13px] font-bold text-red-400">{passwordError}</p>}
           </div>
-
-          {submitError && <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-red-500/30 bg-red-500/12 text-red-200">{submitError}</p>}
-          {registrationSuccess && (
-            <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-green-500/30 bg-green-500/12 text-green-200">{registrationSuccess}</p>
-          )}
-          {submitSuccess && (
-            <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-green-500/30 bg-green-500/12 text-green-200">{submitSuccess}</p>
-          )}
 
           <button
             type="submit"

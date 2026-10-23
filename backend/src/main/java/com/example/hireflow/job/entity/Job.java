@@ -99,4 +99,5 @@ public class Job {
     public void setSalaryMin(Integer salaryMin) { this.salaryMin = salaryMin; }
     public void setSalaryMax(Integer salaryMax) { this.salaryMax = salaryMax; }
     public void setStatus(JobStatus status) { this.status = status; }
+    public void setClosedAt(LocalDateTime closedAt) { this.closedAt = closedAt; }
 }

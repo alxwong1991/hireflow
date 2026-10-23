@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -11,10 +11,9 @@ import {
   applicationStatusClass,
   formatApplicationStatus,
 } from "../jobFormatting";
-import type {
-  EmployerApplication,
-  EmployerApplicationStatus,
-} from "../types";
+import type EmployerApplicationResponse from "../types/employerApplicationResponse";
+import type EmployerApplicationStatus from "../types/employerApplicationStatus";
+import { showErrorAlert, showSuccessAlert } from "../../../shared/utils/alerts";
 
 const employerStatuses: EmployerApplicationStatus[] = [
   "APPLIED",
@@ -29,7 +28,6 @@ function EmployerJobApplicationsPage() {
   const { jobId } = useParams();
   const parsedJobId = Number(jobId);
   const canReviewApplications = Number.isInteger(parsedJobId) && parsedJobId > 0;
-  const [errorMessage, setErrorMessage] = useState("");
   const jobQuery = useQuery({
     queryKey: ["jobs", parsedJobId],
     queryFn: () => getJob(parsedJobId),
@@ -48,17 +46,24 @@ function EmployerJobApplicationsPage() {
       applicationId: number;
       status: EmployerApplicationStatus;
     }) => updateApplicationStatus(parsedJobId, applicationId, status),
-    onSuccess: (updated) => {
-      queryClient.setQueryData<EmployerApplication[]>(
+    onSuccess: async (updated) => {
+      queryClient.setQueryData<EmployerApplicationResponse[]>(
         ["applications", "employer", parsedJobId],
         (current = []) =>
           current.map((application) =>
             application.id === updated.id ? updated : application,
           ),
       );
+      await showSuccessAlert(
+        `Application status changed to ${updated.status.toLowerCase()}.`,
+        "Status updated",
+      );
     },
-    onError: (error) => {
-      setErrorMessage(getApiErrorMessage(error, "Unable to update application status."));
+    onError: async (error) => {
+      await showErrorAlert(
+        getApiErrorMessage(error, "Unable to update application status."),
+        "Unable to update status",
+      );
     },
   });
 
@@ -66,20 +71,28 @@ function EmployerJobApplicationsPage() {
   const applications = applicationsQuery.data ?? [];
   const isLoading = jobQuery.isLoading || applicationsQuery.isLoading;
   const queryError = jobQuery.error ?? applicationsQuery.error;
-  const loadErrorMessage = queryError
-    ? getApiErrorMessage(queryError, "Unable to load applicants.")
-    : "";
+
+  useEffect(() => {
+    if (queryError) {
+      void showErrorAlert(
+        getApiErrorMessage(queryError, "Unable to load applicants."),
+        "Unable to load applicants",
+      );
+    }
+  }, [queryError]);
 
   async function handleStatusChange(
-    application: EmployerApplication,
+    application: EmployerApplicationResponse,
     status: EmployerApplicationStatus,
   ) {
     if (!canReviewApplications) {
-      setErrorMessage("Please log in as an employer to update applications.");
+      await showErrorAlert(
+        "Please log in as an employer to update applications.",
+        "Unable to update status",
+      );
       return;
     }
 
-    setErrorMessage("");
     statusMutation.mutate({ applicationId: application.id, status });
   }
 
@@ -99,30 +112,33 @@ function EmployerJobApplicationsPage() {
         </p>
       </div>
 
-      {(errorMessage || loadErrorMessage) && (
-        <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-red-500/30 bg-red-500/12 text-red-200">{errorMessage || loadErrorMessage}</p>
-      )}
-      {!errorMessage && !loadErrorMessage && applications.length === 0 && (
+      {!queryError && applications.length === 0 && (
         <p className="rounded-[20px] border border-slate-400/25 bg-slate-900/90 p-8 text-center text-slate-400 shadow-[0_24px_70px_rgb(0_0_0/30%)]">No employees have applied to this job yet.</p>
       )}
 
       <div className="grid gap-[18px]">
         {applications.map((application) => (
-          <article className="rounded-[20px] border border-slate-400/25 bg-slate-900/90 p-6 shadow-[0_24px_70px_rgb(0_0_0/30%)]" key={application.id}>
-            <div className="flex items-start justify-between gap-5 max-sm:flex-col max-sm:items-stretch">
-              <div>
+          <article className="rounded-[20px] border border-slate-400/25 bg-slate-900/90 p-6 shadow-[0_24px_70px_rgb(0_0_0/30%)] max-sm:p-5" key={application.id}>
+            <div className="flex items-start justify-between gap-6 max-sm:flex-col">
+              <div className="min-w-0">
                 <p className="m-0 text-[13px] font-black uppercase tracking-[.08em] text-sky-400">Employee applicant</p>
-                <h2>{application.employeeName}</h2>
+                <h2 className="mb-2 break-words">{application.employeeName}</h2>
+                <Link
+                  className="inline-flex min-h-9 items-center justify-center rounded-lg border border-sky-400/25 bg-sky-500/10 px-3.5 text-sm font-bold text-sky-200 transition hover:bg-sky-500/20"
+                  to={`/employer/jobs/${parsedJobId}/applications/${application.id}/profile`}
+                >
+                  View applicant profile
+                </Link>
               </div>
-              <span className={`rounded-full bg-slate-400/12 px-2.5 py-[7px] text-xs font-extrabold text-slate-300 ${applicationStatusClass(application.status)}`}>
+              <span className={`rounded-full px-2.5 py-[7px] text-xs font-extrabold ${applicationStatusClass(application.status)}`}>
                 {formatApplicationStatus(application.status)}
               </span>
             </div>
 
-            <div className="my-[18px] flex flex-wrap gap-2">
-              {application.employeeLocation && <span>{application.employeeLocation}</span>}
-              {application.employeePhone && <span>{application.employeePhone}</span>}
-              <span>Applied {new Date(application.appliedAt).toLocaleDateString()}</span>
+            <div className="my-5 flex flex-wrap gap-2">
+              {application.employeeLocation && <span className="rounded-full border border-slate-400/15 bg-slate-950/45 px-3 py-1.5 text-sm text-slate-300">{application.employeeLocation}</span>}
+              {application.employeePhone && <span className="rounded-full border border-slate-400/15 bg-slate-950/45 px-3 py-1.5 text-sm text-slate-300">{application.employeePhone}</span>}
+              <span className="rounded-full border border-slate-400/15 bg-slate-950/45 px-3 py-1.5 text-sm text-slate-300">Applied {new Date(application.appliedAt).toLocaleDateString()}</span>
             </div>
 
             {application.employeeSummary && (
@@ -137,12 +153,13 @@ function EmployerJobApplicationsPage() {
               <p>{application.coverLetter}</p>
             </div>
 
-            <div className="mt-5 flex items-center justify-between gap-5 border-t border-slate-400/20 pt-5 max-sm:flex-col max-sm:items-stretch">
-              <div>
-                <h3>Application decision</h3>
-                <p>The employee will see this status in their application tracker.</p>
+            <div className="mt-5 grid grid-cols-[minmax(0,1fr)_minmax(220px,320px)] items-center gap-6 border-t border-slate-400/20 pt-5 max-[700px]:grid-cols-1 max-[700px]:gap-3">
+              <div className="min-w-0">
+                <h3 className="mb-1">Application decision</h3>
+                <p className="mb-0 text-sm text-slate-400">The employee will see this status in their application tracker.</p>
               </div>
               <select
+                className="w-full"
                 aria-label={`Status for ${application.employeeName}`}
                 value={application.status}
                 disabled={

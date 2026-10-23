@@ -1,5 +1,6 @@
 package com.example.hireflow.job;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import com.example.hireflow.job.dto.CreateJobRequest;
 import com.example.hireflow.job.dto.EmployerApplicationResponse;
 import com.example.hireflow.job.dto.JobResponse;
 import com.example.hireflow.job.dto.UpdateApplicationStatusRequest;
+import com.example.hireflow.job.dto.UpdateJobStatusRequest;
 
 import jakarta.transaction.Transactional;
 
@@ -91,6 +93,36 @@ public class JobService {
     @Transactional
     public List<JobResponse> getEmployerJobsForUser(Long userId) {
         return getEmployerJobs(requireEmployerProfile(userId).getId());
+    }
+
+    @Transactional
+    public JobResponse closeJobForUser(Long userId, Long jobId, UpdateJobStatusRequest request) {
+        JobStatus requestedStatus = parseJobStatus(request.status());
+        if (requestedStatus != JobStatus.CLOSED) {
+            throw new IllegalArgumentException("Employers can only close an open job");
+        }
+
+        Job job = requireEmployerJob(requireEmployerProfile(userId).getId(), jobId);
+        if (job.getStatus() == JobStatus.CLOSED) {
+            return toJobResponse(job);
+        }
+        if (job.getStatus() != JobStatus.OPEN) {
+            throw new IllegalArgumentException("Only open jobs can be closed");
+        }
+
+        job.setStatus(JobStatus.CLOSED);
+        job.setClosedAt(LocalDateTime.now());
+        return toJobResponse(jobRepository.save(job));
+    }
+
+    @Transactional
+    public void deleteClosedJobForUser(Long userId, Long jobId) {
+        Job job = requireEmployerJob(requireEmployerProfile(userId).getId(), jobId);
+        if (job.getStatus() != JobStatus.CLOSED) {
+            throw new IllegalArgumentException("Only closed jobs can be deleted");
+        }
+
+        jobRepository.delete(job);
     }
 
     @Transactional
@@ -194,6 +226,14 @@ public class JobService {
         }
     }
 
+    private JobStatus parseJobStatus(String value) {
+        try {
+            return JobStatus.valueOf(value.trim().toUpperCase());
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("Job status must be CLOSED");
+        }
+    }
+
     private ApplicationStatus parseEmployerApplicationStatus(String value) {
         ApplicationStatus status;
         try {
@@ -243,6 +283,9 @@ public class JobService {
         return new JobResponse(
             job.getId(),
             job.getEmployerProfile().getCompanyName(),
+            job.getEmployerProfile().getCompanyDescription(),
+            job.getEmployerProfile().getWebsite(),
+            job.getEmployerProfile().getLocation(),
             job.getTitle(),
             job.getDescription(),
             job.getRequirements(),

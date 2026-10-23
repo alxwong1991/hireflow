@@ -11,6 +11,8 @@ import EmployerJobsPage from "../features/jobs/pages/EmployerJobsPage";
 import CreateJobPage from "../features/jobs/pages/CreateJobPage";
 import EmployeeApplicationsPage from "../features/jobs/pages/EmployeeApplicationsPage";
 import EmployerJobApplicationsPage from "../features/jobs/pages/EmployerJobApplicationsPage";
+import CompanyProfilePage from "../features/jobs/pages/CompanyProfilePage";
+import ApplicantProfilePage from "../features/jobs/pages/ApplicantProfilePage";
 import RequireRole from "../features/auth/components/RequireRole";
 import PublicOnlyRoute from "../features/auth/components/PublicOnlyRoute";
 
@@ -39,6 +41,10 @@ export const router = createBrowserRouter([
         element: <JobDetailsPage />,
       },
       {
+        path: "jobs/:jobId/company",
+        element: <CompanyProfilePage />,
+      },
+      {
         element: <RequireRole role="EMPLOYEE" />,
         children: [
           { path: "employee/profile", element: <EmployeeProfilePage /> },
@@ -54,6 +60,10 @@ export const router = createBrowserRouter([
           {
             path: "employer/jobs/:jobId/applications",
             element: <EmployerJobApplicationsPage />,
+          },
+          {
+            path: "employer/jobs/:jobId/applications/:applicationId/profile",
+            element: <ApplicantProfilePage />,
           },
         ],
       },

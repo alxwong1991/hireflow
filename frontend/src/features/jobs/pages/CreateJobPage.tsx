@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createJob, getApiErrorMessage } from "../jobApi";
-import type { CreateJobRequest, EmploymentType } from "../types";
+import { formatJobStatus } from "../jobFormatting";
+import type CreateJobRequest from "../types/createJobRequest";
+import type EmploymentType from "../types/employmentType";
+import { showErrorAlert, showSuccessAlert } from "../../../shared/utils/alerts";
 
 function parseOptionalNumber(value: string): number | null {
   return value === "" ? null : Number(value);
@@ -18,15 +21,18 @@ function CreateJobPage() {
   const [employmentType, setEmploymentType] = useState<EmploymentType>("FULL_TIME");
   const [salaryMin, setSalaryMin] = useState("");
   const [salaryMax, setSalaryMax] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   const mutation = useMutation({
     mutationFn: createJob,
     onSuccess: async (job) => {
       await queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      await showSuccessAlert(
+        `Your job listing is now ${formatJobStatus(job.status).toLowerCase()}.`,
+        "Job posted",
+      );
       navigate(`/jobs/${job.id}`);
     },
-    onError: (error) => {
-      setErrorMessage(getApiErrorMessage(error, "Unable to create the job."));
+    onError: async (error) => {
+      await showErrorAlert(getApiErrorMessage(error, "Unable to create the job."), "Unable to post job");
     },
   });
 
@@ -42,7 +48,6 @@ function CreateJobPage() {
       salaryMax: parseOptionalNumber(salaryMax),
     };
 
-    setErrorMessage("");
     mutation.mutate(request);
   }
 
@@ -92,7 +97,6 @@ function CreateJobPage() {
               <input id="salary-max" type="number" min="0" value={salaryMax} onChange={(e) => setSalaryMax(e.target.value)} />
             </div>
           </div>
-          {errorMessage && <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-red-500/30 bg-red-500/12 text-red-200">{errorMessage}</p>}
           <div className="flex justify-end gap-3">
             <button type="button" className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-[14px] border border-slate-400/25 bg-slate-400/12 px-[22px] font-black text-slate-200 transition duration-200 hover:bg-slate-400/20 disabled:cursor-not-allowed disabled:opacity-65 disabled:transform-none" onClick={() => navigate("/employer/jobs")}>Cancel</button>
             <button className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-[14px] bg-linear-to-br from-blue-600 to-teal-500 px-[22px] font-black text-white shadow-[0_16px_40px_rgb(37_99_235/35%)] transition duration-200 hover:-translate-y-px hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-65 disabled:transform-none disabled:brightness-100" disabled={mutation.isPending}>

@@ -1,13 +1,20 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import JobCard from "../components/JobCard";
 import { getApiErrorMessage, getOpenJobs } from "../jobApi";
+import { showErrorAlert } from "../../../shared/utils/alerts";
 
 function JobsPage() {
   const { data: jobs = [], isLoading, error } = useQuery({
     queryKey: ["jobs", "open"],
     queryFn: getOpenJobs,
   });
-  const errorMessage = error ? getApiErrorMessage(error, "Unable to load jobs.") : "";
+
+  useEffect(() => {
+    if (error) {
+      void showErrorAlert(getApiErrorMessage(error, "Unable to load jobs."), "Unable to load jobs");
+    }
+  }, [error]);
 
   return (
     <section className="mx-auto w-full max-w-[1180px] py-10 pb-16">
@@ -20,11 +27,10 @@ function JobsPage() {
       </div>
 
       {isLoading && <p className="rounded-[20px] border border-slate-400/25 bg-slate-900/90 p-8 text-center text-slate-400 shadow-[0_24px_70px_rgb(0_0_0/30%)]">Loading jobs...</p>}
-      {errorMessage && <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-red-500/30 bg-red-500/12 text-red-200">{errorMessage}</p>}
-      {!isLoading && !errorMessage && jobs.length === 0 && (
+      {!isLoading && !error && jobs.length === 0 && (
         <p className="rounded-[20px] border border-slate-400/25 bg-slate-900/90 p-8 text-center text-slate-400 shadow-[0_24px_70px_rgb(0_0_0/30%)]">No open jobs yet. Check back soon.</p>
       )}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(310px,1fr))] gap-5">
+      <div className="job-card-grid">
         {jobs.map((job) => <JobCard key={job.id} job={job} />)}
       </div>
     </section>

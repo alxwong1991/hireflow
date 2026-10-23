@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getEmployeeProfile, updateEmployeeProfile } from "../employeeApi";
 import type EmployeeProfileResponse from "../types/employeeProfileResponse";
+import { showErrorAlert, showSuccessAlert } from "../../../shared/utils/alerts";
 
 function EmployeeProfileForm({ profile }: { profile: EmployeeProfileResponse }) {
   const queryClient = useQueryClient();
@@ -11,8 +12,15 @@ function EmployeeProfileForm({ profile }: { profile: EmployeeProfileResponse }) 
   const [summary, setSummary] = useState(profile.summary ?? "");
   const mutation = useMutation({
     mutationFn: updateEmployeeProfile,
-    onSuccess: (updated) => {
+    onSuccess: async (updated) => {
       queryClient.setQueryData(["profile", "employee"], updated);
+      await showSuccessAlert("Your profile has been saved.", "Profile updated");
+    },
+    onError: async (error) => {
+      await showErrorAlert(
+        error instanceof Error ? error.message : "Failed to save employee profile.",
+        "Unable to save profile",
+      );
     },
   });
 
@@ -38,12 +46,6 @@ function EmployeeProfileForm({ profile }: { profile: EmployeeProfileResponse }) 
           <label htmlFor="summary">Summary</label>
           <textarea id="summary" value={summary} onChange={(event) => setSummary(event.target.value)} rows={4} />
         </div>
-        {mutation.error && (
-          <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-red-500/30 bg-red-500/12 text-red-200">
-            {mutation.error instanceof Error ? mutation.error.message : "Failed to save employee profile."}
-          </p>
-        )}
-        {mutation.isSuccess && <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-green-500/30 bg-green-500/12 text-green-200">Profile saved.</p>}
         <button
           type="button"
           className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-[14px] bg-linear-to-br from-blue-600 to-teal-500 px-[22px] font-black text-white shadow-[0_16px_40px_rgb(37_99_235/35%)] transition duration-200 hover:-translate-y-px hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-65 disabled:transform-none disabled:brightness-100"
@@ -63,11 +65,20 @@ function EmployeeProfilePage() {
     queryFn: getEmployeeProfile,
   });
 
+  useEffect(() => {
+    if (error) {
+      void showErrorAlert(
+        error instanceof Error ? error.message : "Failed to load employee profile.",
+        "Unable to load profile",
+      );
+    }
+  }, [error]);
+
   if (isLoading) {
     return <section className="flex min-h-[calc(100vh-140px)] items-start justify-center py-12"><div className="w-full max-w-[720px] rounded-[28px] border border-slate-400/25 bg-slate-900/90 p-8 shadow-[0_30px_100px_rgb(0_0_0/45%)] max-sm:rounded-[22px] max-sm:p-6"><p>Loading employee profile...</p></div></section>;
   }
   if (error || !profile) {
-    return <section className="flex min-h-[calc(100vh-140px)] items-start justify-center py-12"><div className="w-full max-w-[720px] rounded-[28px] border border-slate-400/25 bg-slate-900/90 p-8 shadow-[0_30px_100px_rgb(0_0_0/45%)] max-sm:rounded-[22px] max-sm:p-6"><p className="m-0 text-[13px] font-bold text-red-400">Failed to load employee profile.</p></div></section>;
+    return <section className="flex min-h-[calc(100vh-140px)] items-start justify-center py-12"><div className="w-full max-w-[720px] rounded-[28px] border border-slate-400/25 bg-slate-900/90 p-8 shadow-[0_30px_100px_rgb(0_0_0/45%)] max-sm:rounded-[22px] max-sm:p-6"><p>Employee profile unavailable.</p></div></section>;
   }
   return <section className="flex min-h-[calc(100vh-140px)] items-start justify-center py-12"><EmployeeProfileForm profile={profile} /></section>;
 }

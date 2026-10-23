@@ -3,6 +3,8 @@ package com.example.hireflow;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.blankOrNullString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -88,6 +90,108 @@ class AuthFlowTests {
 
         mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer invalid-token"))
             .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void employerCanCloseAndDeleteOnlyTheirClosedJobs() throws Exception {
+        String uniqueId = UUID.randomUUID().toString();
+        String password = "TemporaryPass123!";
+        String employerEmail = "job-owner-" + uniqueId + "@example.com";
+        String otherEmployerEmail = "other-owner-" + uniqueId + "@example.com";
+        String employeeEmail = "job-applicant-" + uniqueId + "@example.com";
+
+        register("""
+            {
+              "email": "%s",
+              "password": "%s",
+              "role": "EMPLOYER",
+              "displayName": "Job Owner",
+              "companyName": "Job Owner Company"
+            }
+            """.formatted(employerEmail, password));
+        register("""
+            {
+              "email": "%s",
+              "password": "%s",
+              "role": "EMPLOYER",
+              "displayName": "Other Employer",
+              "companyName": "Other Employer Company"
+            }
+            """.formatted(otherEmployerEmail, password));
+        register("""
+            {
+              "email": "%s",
+              "password": "%s",
+              "role": "EMPLOYEE",
+              "displayName": "Job Applicant",
+              "fullName": "Job Applicant"
+            }
+            """.formatted(employeeEmail, password));
+
+        String employerToken = login(employerEmail, password, "EMPLOYER");
+        String otherEmployerToken = login(otherEmployerEmail, password, "EMPLOYER");
+        String employeeToken = login(employeeEmail, password, "EMPLOYEE");
+        String employerAuth = bearer(employerToken);
+        String jobRequest = """
+            {
+              "title": "Hiring Test",
+              "description": "A role for lifecycle testing.",
+              "requirements": "",
+              "location": "Remote",
+              "employmentType": "FULL_TIME",
+              "salaryMin": 50000,
+              "salaryMax": 70000
+            }
+            """;
+
+        MvcResult createdJob = mockMvc.perform(post("/api/employer/jobs")
+                .header("Authorization", employerAuth)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jobRequest))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value("OPEN"))
+            .andReturn();
+        JsonNode job = objectMapper.readTree(createdJob.getResponse().getContentAsString());
+        long jobId = job.get("id").asLong();
+
+        mockMvc.perform(delete("/api/employer/jobs/{jobId}", jobId)
+                .header("Authorization", employerAuth))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/employee/jobs/{jobId}/applications", jobId)
+                .header("Authorization", bearer(employeeToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"coverLetter\":\"I am interested.\"}"))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(patch("/api/employer/jobs/{jobId}/status", jobId)
+                .header("Authorization", employerAuth)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"CLOSED\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("CLOSED"));
+
+        mockMvc.perform(get("/api/employer/jobs/{jobId}/applications", jobId)
+                .header("Authorization", employerAuth))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].coverLetter").value("I am interested."));
+
+        mockMvc.perform(post("/api/employee/jobs/{jobId}/applications", jobId)
+                .header("Authorization", bearer(employeeToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"coverLetter\":\"I am interested.\"}"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(delete("/api/employer/jobs/{jobId}", jobId)
+                .header("Authorization", bearer(otherEmployerToken)))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(delete("/api/employer/jobs/{jobId}", jobId)
+                .header("Authorization", employerAuth))
+            .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/jobs/{jobId}", jobId))
+            .andExpect(status().isBadRequest());
     }
 
     private void register(String requestBody) throws Exception {

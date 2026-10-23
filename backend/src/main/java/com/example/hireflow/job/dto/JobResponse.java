@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 public record JobResponse(
     Long id,
     String companyName,
+    String companyDescription,
+    String companyWebsite,
+    String companyLocation,
     String title,
     String description,
     String requirements,

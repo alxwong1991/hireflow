@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +20,7 @@ import com.example.hireflow.job.dto.CreateJobRequest;
 import com.example.hireflow.job.dto.EmployerApplicationResponse;
 import com.example.hireflow.job.dto.JobResponse;
 import com.example.hireflow.job.dto.UpdateApplicationStatusRequest;
+import com.example.hireflow.job.dto.UpdateJobStatusRequest;
 import com.example.hireflow.auth.CurrentUserService;
 
 import jakarta.validation.Valid;
@@ -56,6 +58,28 @@ public class JobController {
     @GetMapping("/employer/jobs")
     public List<JobResponse> getEmployerJobs(Authentication authentication) {
         return jobService.getEmployerJobsForUser(currentUserService.requireUser(authentication).getId());
+    }
+
+    @PatchMapping("/employer/jobs/{jobId}/status")
+    public JobResponse closeJob(
+        Authentication authentication,
+        @PathVariable Long jobId,
+        @Valid @RequestBody UpdateJobStatusRequest request
+    ) {
+        return jobService.closeJobForUser(
+            currentUserService.requireUser(authentication).getId(),
+            jobId,
+            request
+        );
+    }
+
+    @DeleteMapping("/employer/jobs/{jobId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteClosedJob(Authentication authentication, @PathVariable Long jobId) {
+        jobService.deleteClosedJobForUser(
+            currentUserService.requireUser(authentication).getId(),
+            jobId
+        );
     }
 
     @GetMapping("/employer/jobs/{jobId}/applications")

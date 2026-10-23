@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../authApi";
+import { showErrorAlert, showSuccessAlert } from "../../../shared/utils/alerts";
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -18,8 +19,6 @@ function RegisterPage() {
   const [passwordError, setPasswordError] = useState("");
   const [roleError, setRoleError] = useState("");
 
-  const [submitError, setSubmitError] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function validateEmail(value: string) {
@@ -48,9 +47,6 @@ function RegisterPage() {
     setEmailError("");
     setPasswordError("");
     setRoleError("");
-    setSubmitError("");
-    setSubmitSuccess("");
-
     let isValid = true;
 
     if (!role) {
@@ -88,42 +84,6 @@ function RegisterPage() {
       return;
     }
 
-    // try {
-    //   setIsSubmitting(true);
-    //   const data = await registerUser({
-    //     email: email.trim(),
-    //     password,
-    //     role,
-
-        
-    //     // For sticky top-0 z-10 flex min-h-[76px] w-full items-center justify-between border-b border-slate-400/20 bg-slate-950/75 px-8 backdrop-blur-[18px] max-sm:h-auto max-sm:flex-col max-sm:items-start max-sm:gap-4 max-sm:p-4/login display name
-    //     displayName:role === "EMPLOYEE" ? fullName.trim() : companyName.trim(),
-
-    //     // Role-specific fields
-    //     // fullName: role === "EMPLOYEE" ? fullName.trim() : null,
-    //     // companyName: role === "EMPLOYER" ? companyName.trim() : null,
-    //   });
-
-    //   console.log("Registration success:", data);
-
-    //   setSubmitSuccess("Account created successfully. You can now log in.");
-
-    //   setFullName("");
-    //   setCompanyName("");
-    //   setEmail("");
-    //   setPassword("");
-    //   setRole("");
-    //   window.location.href = "/login";
-    // } catch (error) {
-    //   if (error instanceof Error) {
-    //     setSubmitError(error.message);
-    //   } else {
-    //     setSubmitError("Something went wrong. Please try again.");
-    //   }
-    // } finally {
-    //   setIsSubmitting(false);
-    // }
-
     try {
       setIsSubmitting(true);
       await registerUser({
@@ -134,13 +94,17 @@ function RegisterPage() {
         fullName: role === "EMPLOYEE" ? fullName.trim() : undefined,
         companyName: role === "EMPLOYER" ? companyName.trim() : undefined,
       });
+      await showSuccessAlert(
+        "Your account has been created. You can now log in.",
+        "Registration successful",
+      );
       navigate("/login", {
         replace: true,
-        state: { registrationSuccess: "Account created successfully. You can now log in." },
       });
     } catch (error) {
-      setSubmitError(
+      await showErrorAlert(
         error instanceof Error ? error.message : "Unable to register. Please try again.",
+        "Registration failed",
       );
     } finally {
       setIsSubmitting(false);
@@ -224,12 +188,6 @@ function RegisterPage() {
             />
             {passwordError && <p className="m-0 text-[13px] font-bold text-red-400">{passwordError}</p>}
           </div>
-
-          {submitError && <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-red-500/30 bg-red-500/12 text-red-200">{submitError}</p>}
-
-          {submitSuccess && (
-            <p className="m-0 rounded-[14px] p-3.5 text-sm font-extrabold leading-6 border border-green-500/30 bg-green-500/12 text-green-200">{submitSuccess}</p>
-          )}
 
           <button
             type="submit"
