@@ -38,7 +38,7 @@ Install the following before running the project locally:
 
 - Git
 - Java 21
-- Node.js
+- Node.js 24 LTS (recommended; the frontend tests use native TypeScript support)
 - npm
 - Podman
 - Podman Compose
@@ -82,19 +82,79 @@ HireFlow supports two role-specific workflows:
 
 - Employers can create job listings and review all jobs created by their company.
 - Employers can see applicant counts, review profiles and cover letters, and update each application to applied, reviewing, shortlisted, accepted, or rejected.
+- Employers can close their own listings to stop applications, then permanently delete closed listings and their applications after confirming.
 - Employees can browse open jobs, view job details, submit one immutable application per job, and review their submitted cover letters.
 - Visitors can browse open jobs but must log in with an employee account to apply.
-- Authentication uses a single 24-hour JWT returned by the login or registration API. Protected endpoints derive identity and role from the bearer token.
+- Authentication uses a 30-minute JWT returned by login or registration. The frontend renews it while users are active and logs them out after 30 minutes of inactivity, with a session-ended popup.
 - TanStack React Query manages server state while Auth Context exposes the current signed-in user.
+
+### How to use HireFlow
+
+1. Start the database, backend, and frontend using the setup guide below, then open `http://localhost:5173`.
+2. Select **Register**, choose Employee or Employer, and enter an email and a password of at least eight characters.
+   Employees provide their full name; employers provide their company name.
+3. After registration, log in with that email and password. The selected account role controls the workspace and protected actions.
+
+**Employee workflow**
+
+1. Open your profile and maintain your name, location, phone number, and summary.
+2. Browse open jobs, open a listing to read requirements and salary details, and view its company profile.
+3. Enter a cover letter and apply. Only one application per employee per job is allowed; submitted applications and cover letters cannot be edited.
+4. Open your application history to review submissions and their current status.
+
+**Employer workflow**
+
+1. Open your company profile and maintain the company name, description, website, and location.
+2. Open **My jobs**, select **Create a job**, and enter the title, description, location, employment type, and optional requirements/salary range.
+3. Open a listing's applicants to review cover letters and applicant profiles, then update application statuses.
+4. Close a listing when no more applications should be accepted. Existing applications remain available for review.
+5. Delete a closed listing only when it is no longer needed: confirmation permanently removes both the listing and its applications.
+
+Visitors can browse jobs and company information without an account, but must log in as an employee to apply.
+Use **Logout** to end a session manually, especially on a shared computer.
+
+### How sessions work
+
+- Both employee and employer JWTs have a default lifetime of **1,800,000 milliseconds (30 minutes)**.
+- Mouse/pointer movement, clicks, typing, scrolling, and touch input count as activity.
+  Merely leaving a page open, focusing a tab, or background API requests does not.
+- The frontend checks the session every second and renews a valid JWT through `POST /api/auth/renew` when there has been activity since it was issued.
+  Renewal is throttled to at most once per minute per tab. There is no long-lived refresh token, and an expired JWT cannot be renewed.
+- After **30 consecutive minutes without activity**, the app clears authentication and cached data, redirects to login, and displays:
+  "You have been logged out after 30 minutes of inactivity. Please log in again."
+- An expired/invalid token or an authenticated API response with HTTP 401 also ends the session and shows an expiry alert.
+  Connection failures are reported rather than silently extending the session; users must log in again if the token expires.
+- Authentication and the last-activity timestamp are stored in browser local storage. Reloading does not restart the inactivity countdown;
+  activity and logout are shared across tabs of the same browser/origin. Switching accounts also updates other tabs.
+- Browser sleep or background-tab throttling may delay the popup until the browser resumes. The old deadline is checked **before** accepting new activity or sending an API request.
+- Existing browser sessions without an activity timestamp must log in again after this update.
+- The API remains stateless: logout removes browser credentials but does not revoke an already copied JWT.
+  Non-browser API clients must renew their own valid token when needed.
+
+### Application architecture
+
+- The React router serves public pages and role-protected employee/employer workspaces.
+- Auth Context handles login state and session monitoring; Axios attaches the bearer JWT and handles authentication failures.
+- TanStack React Query fetches/caches jobs, profiles, and applications, and refreshes affected data after updates.
+- Spring Security validates JWT signatures/expiry and enforces roles. Services use the authenticated account for ownership checks;
+  employee/employer identities are not accepted from client-supplied user IDs.
+- Spring Data JPA stores users, profiles, jobs, and applications in PostgreSQL. Flyway applies versioned schema migrations on backend startup.
+- SweetAlert2 displays success/error messages, session-ended alerts, and destructive-action confirmations.
 
 The main frontend routes are:
 
 ```text
 /jobs                   Open job listings
 /jobs/:jobId            Job details and employee application form
+/jobs/:jobId/company    Company profile for a listing
+/login                  Sign in
+/register               Create an account
+/employee/profile       Employee profile
+/employer/profile       Company profile
 /employer/jobs          Employer job dashboard
 /employer/jobs/new      Job creation form
 /employer/jobs/:jobId/applications  Employer applicant review
+/employer/jobs/:jobId/applications/:applicationId/profile  Applicant profile
 /employee/applications  Employee application history
 ```
 
@@ -105,6 +165,8 @@ GET  /api/jobs
 GET  /api/jobs/{jobId}
 POST /api/employer/jobs
 GET  /api/employer/jobs
+PATCH /api/employer/jobs/{jobId}/status
+DELETE /api/employer/jobs/{jobId}
 GET  /api/employer/jobs/{jobId}/applications
 PATCH /api/employer/jobs/{jobId}/applications/{applicationId}/status
 POST /api/employee/jobs/{jobId}/applications
@@ -126,6 +188,7 @@ Authentication endpoints:
 POST /api/auth/register
 POST /api/auth/login
 GET  /api/auth/me
+POST /api/auth/renew
 ```
 
 To test with Postman:
@@ -157,8 +220,13 @@ For production, set a unique secret of at least 32 bytes:
 
 ```text
 JWT_SECRET=<strong-random-secret>
-JWT_EXPIRATION_MS=86400000
+JWT_EXPIRATION_MS=1800000
 ```
+
+`JWT_EXPIRATION_MS` overrides the backend default; remove any old `86400000` override to use 30-minute JWTs.
+The browser inactivity limit is defined by `INACTIVITY_TIMEOUT_MS` in
+`frontend/src/features/auth/sessionMonitor.ts` and is independent of that backend override.
+Keep the default JWT lifetime for the documented renewal behavior. Restart the backend after changing its environment.
 
 Job creation validates required fields, employment type, non-negative salary values, and salary range order. Applications are accepted only for open jobs, require a cover letter, and reject duplicate applications by the same employee.
 
@@ -321,6 +389,17 @@ http://localhost:5173
 ```
 
 If Vite uses a different port, check the terminal output.
+
+The frontend calls `http://localhost:8080/api` by default. To change it, set
+`VITE_API_BASE_URL` before starting Vite (or in `frontend/.env.local`):
+
+```dotenv
+VITE_API_BASE_URL=http://localhost:8080/api
+```
+
+If the frontend uses another origin, set `CORS_ALLOWED_ORIGINS` on the backend
+to the permitted frontend origin(s), separated by commas. Its default is `http://localhost:5173`.
+Vite environment changes require restarting the development server or rebuilding production assets.
 
 ---
 
@@ -506,6 +585,23 @@ Preview frontend production build:
 
 ```bash
 npm run preview
+```
+
+Run session tests and lint:
+
+```bash
+npm test
+npm run lint
+```
+
+The frontend tests use a simulated clock to check the exact inactivity boundary,
+active-session renewal beyond 30 minutes, restored sessions, sleep/wake behavior,
+invalid tokens, and renewal errors without a real 30-minute wait.
+Backend authentication integration tests require the local PostgreSQL database. From the project root:
+
+```bash
+cd backend
+./mvnw -Dtest=AuthFlowTests test
 ```
 
 ---

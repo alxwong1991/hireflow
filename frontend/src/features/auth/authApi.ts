@@ -79,3 +79,8 @@ export async function getCurrentUser(): Promise<AuthResponse> {
   const response = await apiClient.get<AuthResponse>("/auth/me");
   return response.data;
 }
+
+export async function renewSession(): Promise<AuthResponse> {
+  const response = await apiClient.post<AuthResponse>("/auth/renew");
+  return response.data;
+}

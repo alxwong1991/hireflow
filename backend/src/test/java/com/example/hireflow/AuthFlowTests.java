@@ -2,6 +2,8 @@ package com.example.hireflow;
 
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.blankOrNullString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -9,8 +11,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.UUID;
 
+import com.example.hireflow.auth.JwtService;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +40,59 @@ class AuthFlowTests {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Value("${app.jwt.secret}")
+    private String jwtSecret;
+
+    @Value("${app.jwt.expiration-ms}")
+    private long jwtExpirationMs;
+
+    @Test
+    void sessionsCanBeRenewedOnlyWithAValidToken() throws Exception {
+        mockMvc.perform(post("/api/auth/renew"))
+            .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/auth/renew").header("Authorization", bearer("invalid")))
+            .andExpect(status().isUnauthorized());
+
+        String email = "renew-" + UUID.randomUUID() + "@example.com";
+        String password = "TemporaryPass123!";
+        register("""
+            {
+              "email": "%s", "password": "%s", "role": "EMPLOYEE",
+              "displayName": "Session Test", "fullName": "Session Test"
+            }
+            """.formatted(email, password));
+
+        String token = login(email, password, "EMPLOYEE");
+        var claims = jwtService.parseToken(token);
+        assertEquals(jwtExpirationMs, claims.getExpiration().getTime() - claims.getIssuedAt().getTime());
+
+        var key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        String olderToken = Jwts.builder().subject(email)
+            .issuedAt(new Date(System.currentTimeMillis() - 60_000))
+            .expiration(new Date(System.currentTimeMillis() + 60_000))
+            .signWith(key).compact();
+        MvcResult result = mockMvc.perform(post("/api/auth/renew")
+                .header("Authorization", bearer(olderToken)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.email").value(email))
+            .andExpect(jsonPath("$.role").value("EMPLOYEE"))
+            .andReturn();
+        String renewedToken = objectMapper.readTree(result.getResponse().getContentAsString()).get("token").asString();
+        var renewedClaims = jwtService.parseToken(renewedToken);
+        assertEquals(jwtExpirationMs, renewedClaims.getExpiration().getTime() - renewedClaims.getIssuedAt().getTime());
+        assertTrue(renewedClaims.getExpiration().after(jwtService.parseToken(olderToken).getExpiration()));
+
+        String expiredToken = Jwts.builder().subject(email)
+            .issuedAt(new Date(System.currentTimeMillis() - 120_000))
+            .expiration(new Date(System.currentTimeMillis() - 60_000))
+            .signWith(key).compact();
+        mockMvc.perform(post("/api/auth/renew").header("Authorization", bearer(expiredToken)))
+            .andExpect(status().isUnauthorized());
+    }
 
     @Test
     void employeeAndEmployerLoginsReturnSeparateRoleProtectedTokens() throws Exception {
@@ -84,6 +145,12 @@ class AuthFlowTests {
 
         mockMvc.perform(get("/api/employer/jobs").header("Authorization", bearer(employerToken)))
             .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/auth/renew").header("Authorization", bearer(employerToken)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.email").value(employerEmail))
+            .andExpect(jsonPath("$.role").value("EMPLOYER"))
+            .andExpect(jsonPath("$.token", not(blankOrNullString())));
 
         mockMvc.perform(get("/api/employee/profile").header("Authorization", bearer(employerToken)))
             .andExpect(status().isForbidden());

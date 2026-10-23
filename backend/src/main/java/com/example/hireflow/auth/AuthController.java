@@ -48,4 +48,10 @@ public class AuthController {
         User user = currentUserService.requireUser(authentication);
         return authService.toAuthResponse(user, null, "Authenticated");
     }
+
+    @PostMapping("/renew")
+    public AuthResponse renew(Authentication authentication) {
+        User user = currentUserService.requireUser(authentication);
+        return authService.toAuthResponse(user, jwtService.createToken(user), "Session renewed");
+    }
 }
