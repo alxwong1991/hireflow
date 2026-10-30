@@ -38,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             : null;
         if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
+                // Only a valid token for an active account creates the principal used by role checks.
                 String email = jwtService.parseToken(token).getSubject();
                 userRepository.findByEmail(email)
                     .filter(user -> Boolean.TRUE.equals(user.getActive()))

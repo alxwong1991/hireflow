@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../authContextValue";
 import { showErrorAlert } from "../../../shared/utils/alerts";
+import { profilePathForRole } from "../authRoutes";
 
 function PublicOnlyRoute() {
   const { user, isLoading, errorMessage } = useAuth();
@@ -19,7 +20,7 @@ function PublicOnlyRoute() {
     return null;
   }
   if (user) {
-    return <Navigate to={user.role === "EMPLOYER" ? "/employer/jobs" : "/jobs"} replace />;
+    return <Navigate to={profilePathForRole(user.role)} replace />;
   }
   return <Outlet />;
 }

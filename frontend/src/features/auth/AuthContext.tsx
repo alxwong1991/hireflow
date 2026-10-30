@@ -26,6 +26,7 @@ const CURRENT_USER_KEY = ["current-user"] as const;
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [storedAuth, setStoredAuth] = useState(readStoredAuth);
+  // Revalidate a saved session with the backend on startup, while keeping its token for authenticated requests.
   const { data, isLoading, error } = useQuery({
     queryKey: CURRENT_USER_KEY,
     queryFn: async () => {
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         expire(event.detail);
       }
     };
+    // Login, logout, and account changes in another tab must update this tab's auth state and cached data.
     const onStorage = (event: StorageEvent) => {
       if (event.key !== AUTH_STORAGE_KEY && event.key !== null) return;
       const auth = readStoredAuth();

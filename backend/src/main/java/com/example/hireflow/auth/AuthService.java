@@ -3,9 +3,9 @@ package com.example.hireflow.auth;
 import com.example.hireflow.auth.dto.AuthResponse;
 import com.example.hireflow.auth.dto.LoginRequest;
 import com.example.hireflow.auth.dto.RegisterRequest;
-import com.example.hireflow.employee.EmployeeProfile;
+import com.example.hireflow.employee.entity.EmployeeProfile;
 import com.example.hireflow.employee.EmployeeProfileRepository;
-import com.example.hireflow.employer.EmployerProfile;
+import com.example.hireflow.employer.entity.EmployerProfile;
 import com.example.hireflow.employer.EmployerProfileRepository;
 import com.example.hireflow.user.User;
 import com.example.hireflow.user.UserRepository;
@@ -36,6 +36,7 @@ public class AuthService {
 
     @Transactional
     public User registerUser(RegisterRequest request) {
+        // Create the account and its role-specific profile in one transaction to avoid partial registration.
         String email = request.email().trim().toLowerCase();
 
         if (userRepository.existsByEmail(email)) {

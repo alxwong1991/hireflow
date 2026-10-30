@@ -19,6 +19,7 @@ apiClient.interceptors.request.use((config) => {
     window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT, { detail: reason }));
     throw new axios.CanceledError("Your session has ended. Please log in again.");
   }
+  // Centralize bearer-token attachment so feature API modules do not manage auth headers themselves.
   const token = session?.token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -29,6 +30,7 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
+    // A 401 from a request made with this session's token means the client session is no longer usable.
     if (
       axios.isAxiosError(error) && error.response?.status === 401 &&
       error.config?.headers.Authorization === `Bearer ${readSession()?.token}`

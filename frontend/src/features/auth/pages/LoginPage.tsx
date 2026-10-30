@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../authApi";
 import { useAuth } from "../authContextValue";
 import { showErrorAlert, showSuccessAlert } from "../../../shared/utils/alerts";
+import { profilePathForRole } from "../authRoutes";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -52,12 +53,7 @@ function LoginPage() {
       });
       await showSuccessAlert("You are now signed in.", "Login successful");
       setUser(userData);
-
-      if (userData.role === "EMPLOYEE") {
-        navigate("/employee/profile");
-      } else if (userData.role === "EMPLOYER") {
-        navigate("/employer/profile");
-      }
+      navigate(profilePathForRole(userData.role), { replace: true });
 
     } catch (error) {
       await showErrorAlert(

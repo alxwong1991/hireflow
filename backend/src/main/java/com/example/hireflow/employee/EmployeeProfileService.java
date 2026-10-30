@@ -2,6 +2,7 @@ package com.example.hireflow.employee;
 
 import org.springframework.stereotype.Service;
 
+import com.example.hireflow.employee.entity.EmployeeProfile;
 import com.example.hireflow.employee.dto.EmployeeProfileResponse;
 import com.example.hireflow.employee.dto.EmployeeProfileUpdateRequest;
 

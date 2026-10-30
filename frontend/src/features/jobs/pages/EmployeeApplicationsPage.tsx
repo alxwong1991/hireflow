@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { getApiErrorMessage, getEmployeeApplications } from "../jobApi";
 import {
   applicationStatusClass,
@@ -9,10 +9,28 @@ import {
 import { showErrorAlert } from "../../../shared/utils/alerts";
 
 function EmployeeApplicationsPage() {
+  const location = useLocation();
+  const highlightedApplicationId = Number(
+    location.hash.match(/^#application-(\d+)$/)?.[1],
+  );
   const { data: applications = [], isLoading, error } = useQuery({
     queryKey: ["applications", "employee"],
     queryFn: getEmployeeApplications,
   });
+
+  useEffect(() => {
+    const applicationId = Number(location.hash.match(/^#application-(\d+)$/)?.[1]);
+    if (!Number.isInteger(applicationId) || applicationId <= 0) return;
+    const matchingApplication = applications.some(
+      (application) => application.id === applicationId,
+    );
+    if (!matchingApplication) return;
+
+    document.getElementById(`application-${applicationId}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, [applications, location.hash]);
 
   useEffect(() => {
     if (error) {
@@ -36,7 +54,15 @@ function EmployeeApplicationsPage() {
       )}
       <div className="grid gap-4">
         {applications.map((application) => (
-          <article className="rounded-[20px] border border-slate-400/25 bg-slate-900/90 p-6 shadow-[0_24px_70px_rgb(0_0_0/30%)]" key={application.id}>
+          <article
+            id={`application-${application.id}`}
+            className={`rounded-[20px] border p-6 shadow-[0_24px_70px_rgb(0_0_0/30%)] transition-colors duration-500 ${
+              highlightedApplicationId === application.id
+                ? "border-sky-300 bg-sky-950/70 ring-2 ring-sky-400/70"
+                : "border-slate-400/25 bg-slate-900/90"
+            }`}
+            key={application.id}
+          >
             <div className="flex items-start justify-between gap-5 max-sm:flex-col max-sm:items-stretch">
               <div>
               <p className="m-0 text-[13px] font-black uppercase tracking-[.08em] text-sky-400">{application.companyName}</p>

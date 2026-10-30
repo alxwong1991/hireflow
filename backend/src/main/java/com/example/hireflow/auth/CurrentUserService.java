@@ -18,6 +18,7 @@ public class CurrentUserService {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new IllegalArgumentException("Authentication is required");
         }
+        // Resolve the authenticated principal server-side; API callers do not choose the acting user ID.
         return userRepository.findByEmail(authentication.getName())
             .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found"));
     }

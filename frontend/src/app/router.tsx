@@ -1,5 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
-import MainLayout from "../shared/layouts/MainLayout";
+import MainLayout from "./layouts/MainLayout";
 import HomePage from "../features/home/pages/HomePage";
 import LoginPage from "../features/auth/pages/LoginPage";
 import RegisterPage from "../features/auth/pages/RegisterPage";
@@ -13,6 +13,7 @@ import EmployeeApplicationsPage from "../features/jobs/pages/EmployeeApplication
 import EmployerJobApplicationsPage from "../features/jobs/pages/EmployerJobApplicationsPage";
 import CompanyProfilePage from "../features/jobs/pages/CompanyProfilePage";
 import ApplicantProfilePage from "../features/jobs/pages/ApplicantProfilePage";
+import NotificationsPage from "../features/notifications/pages/NotificationsPage";
 import RequireRole from "../features/auth/components/RequireRole";
 import PublicOnlyRoute from "../features/auth/components/PublicOnlyRoute";
 
@@ -49,12 +50,14 @@ export const router = createBrowserRouter([
         children: [
           { path: "employee/profile", element: <EmployeeProfilePage /> },
           { path: "employee/applications", element: <EmployeeApplicationsPage /> },
+          { path: "employee/notifications", element: <NotificationsPage /> },
         ],
       },
       {
         element: <RequireRole role="EMPLOYER" />,
         children: [
           { path: "employer/profile", element: <EmployerProfilePage /> },
+          { path: "employer/notifications", element: <NotificationsPage /> },
           { path: "employer/jobs", element: <EmployerJobsPage /> },
           { path: "employer/jobs/new", element: <CreateJobPage /> },
           {

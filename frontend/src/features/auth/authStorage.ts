@@ -25,6 +25,7 @@ export function storeAuth(auth: AuthResponse): void {
 
 export function startStoredSession(auth: AuthResponse): void {
   localStorage.removeItem(SESSION_END_KEY);
+  // Keep the inactivity deadline separate from the JWT so reloads and other tabs share the same activity state.
   recordActivity(Date.now());
   storeAuth(auth);
 }

@@ -90,6 +90,9 @@ HireFlow supports two role-specific workflows:
 
 ### How to use HireFlow
 
+The navbar uses icons with labels underneath for browsing jobs, your role-specific workspace, notifications,
+profile, and logout. On smaller screens, these controls sit in a row below the HireFlow logo and account name.
+
 1. Start the database, backend, and frontend using the setup guide below, then open `http://localhost:5173`.
 2. Select **Register**, choose Employee or Employer, and enter an email and a password of at least eight characters.
    Employees provide their full name; employers provide their company name.
@@ -113,6 +116,27 @@ HireFlow supports two role-specific workflows:
 Visitors can browse jobs and company information without an account, but must log in as an employee to apply.
 Use **Logout** to end a session manually, especially on a shared computer.
 
+### Notifications
+
+- Both roles have a **Notifications** bell beside Profile. Its red badge counts all unread notifications,
+  not just the current page; it disappears at zero (counts above 99 display as `99+`).
+- Employers receive one notification for each new application, including the applicant name, job title,
+  and applicant total at the time of submission. Opening it goes to that job's applicant list, where the
+  current total is available.
+- Employees receive a notification whenever an employer changes their application status. Opening it
+  goes to the matching entry in **My applications**, showing its current status and submitted cover letter.
+  Saving the same status again does not create another notification.
+- Opening an individual notification marks only that item as read and reduces the unread count once.
+  Read notifications remain available until deleted using their Delete button. Unread items cannot be deleted.
+- Notifications and read state are stored in the database, so they survive reloads and logins.
+  The bell/list refresh every 30 seconds and when the window regains focus; delivery is not push-based.
+  Notifications are paginated in groups of 20, newest first.
+- Only the signed-in recipient can list, read, or delete their notifications. Existing applications are
+  not backfilled: notifications start with new applications/status changes after this feature is installed.
+- Permanently deleting a closed job also removes its applications and related notifications, avoiding links
+  to deleted records. Closing a job alone does not remove notifications or application history.
+- Backend startup applies Flyway migration V5 automatically; restart the backend before using the feature.
+
 ### How sessions work
 
 - Both employee and employer JWTs have a default lifetime of **1,800,000 milliseconds (30 minutes)**.
@@ -133,6 +157,12 @@ Use **Logout** to end a session manually, especially on a shared computer.
 
 ### Application architecture
 
+- Backend code is organized by feature (`auth`, `job`, `employee`, `employer`, `notification`); controllers,
+  services, and repositories stay with their feature, and Java package names match their source folders.
+  Feature-specific transport types live in `dto` subpackages and persistence models in `entity` subpackages.
+- Frontend feature modules own their pages, API calls, types, and feature-specific queries. `app` composes
+  routes and the auth-aware application shell, while `shared` contains cross-cutting UI and utilities;
+  role-to-profile navigation is centralized in the auth feature.
 - The React router serves public pages and role-protected employee/employer workspaces.
 - Auth Context handles login state and session monitoring; Axios attaches the bearer JWT and handles authentication failures.
 - TanStack React Query fetches/caches jobs, profiles, and applications, and refreshes affected data after updates.
@@ -156,6 +186,8 @@ The main frontend routes are:
 /employer/jobs/:jobId/applications  Employer applicant review
 /employer/jobs/:jobId/applications/:applicationId/profile  Applicant profile
 /employee/applications  Employee application history
+/employee/notifications Employee notifications
+/employer/notifications Employer notifications
 ```
 
 The corresponding backend endpoints are:
@@ -171,6 +203,9 @@ GET  /api/employer/jobs/{jobId}/applications
 PATCH /api/employer/jobs/{jobId}/applications/{applicationId}/status
 POST /api/employee/jobs/{jobId}/applications
 GET  /api/employee/applications
+GET  /api/notifications?page=0
+PATCH /api/notifications/{id}/read
+DELETE /api/notifications/{id}
 GET  /api/employee/profile
 POST /api/employee/profile
 PATCH /api/employee/profile

@@ -4,6 +4,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../authContextValue";
 import type { UserRole } from "../types/userRole";
 import { showErrorAlert } from "../../../shared/utils/alerts";
+import { profilePathForRole } from "../authRoutes";
 
 function RequireRole({ role }: { role: UserRole }) {
   const { user, isLoading, errorMessage } = useAuth();
@@ -25,7 +26,7 @@ function RequireRole({ role }: { role: UserRole }) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
   if (user.role !== role) {
-    return <Navigate to={user.role === "EMPLOYER" ? "/employer/jobs" : "/jobs"} replace />;
+    return <Navigate to={profilePathForRole(user.role)} replace />;
   }
   return <Outlet />;
 }

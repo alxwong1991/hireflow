@@ -1,4 +1,4 @@
-package com.example.hireflow.employee;
+package com.example.hireflow.employee.entity;
 
 import java.time.LocalDateTime;
 import com.example.hireflow.user.User;

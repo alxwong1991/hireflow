@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 import { SESSION_ENDED_EVENT } from "../../features/auth/sessionMonitor";
 import type { SessionEndReason } from "../../features/auth/sessionMonitor";
 import { useAuth } from "../../features/auth/authContextValue";
-import { showErrorAlert } from "../utils/alerts";
+import { showErrorAlert } from "../../shared/utils/alerts";
 
 function MainLayout() {
   const navigate = useNavigate();

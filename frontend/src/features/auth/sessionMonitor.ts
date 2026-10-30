@@ -51,6 +51,7 @@ export function startSessionMonitor(options: MonitorOptions): () => void {
   let lastRecorded = 0;
   let reportedError = false;
 
+  // Every trigger checks expiry first; renewal is allowed only after user activity and is throttled per tab.
   const check = () => {
     const session = options.readSession();
     if (!session) return false;

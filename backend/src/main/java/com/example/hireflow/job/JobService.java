@@ -5,9 +5,11 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.example.hireflow.employee.EmployeeProfile;
+import com.example.hireflow.employee.entity.EmployeeProfile;
 import com.example.hireflow.employee.EmployeeProfileRepository;
-import com.example.hireflow.employer.EmployerProfile;
+import com.example.hireflow.employer.entity.EmployerProfile;
+import com.example.hireflow.job.entity.Job;
+import com.example.hireflow.job.entity.JobApplication;
 import com.example.hireflow.employer.EmployerProfileRepository;
 import com.example.hireflow.job.dto.ApplicationResponse;
 import com.example.hireflow.job.dto.CreateApplicationRequest;
@@ -16,6 +18,7 @@ import com.example.hireflow.job.dto.EmployerApplicationResponse;
 import com.example.hireflow.job.dto.JobResponse;
 import com.example.hireflow.job.dto.UpdateApplicationStatusRequest;
 import com.example.hireflow.job.dto.UpdateJobStatusRequest;
+import com.example.hireflow.notification.NotificationService;
 
 import jakarta.transaction.Transactional;
 
@@ -25,17 +28,20 @@ public class JobService {
     private final JobApplicationRepository applicationRepository;
     private final EmployerProfileRepository employerProfileRepository;
     private final EmployeeProfileRepository employeeProfileRepository;
+    private final NotificationService notificationService;
 
     public JobService(
         JobRepository jobRepository,
         JobApplicationRepository applicationRepository,
         EmployerProfileRepository employerProfileRepository,
-        EmployeeProfileRepository employeeProfileRepository
+        EmployeeProfileRepository employeeProfileRepository,
+        NotificationService notificationService
     ) {
         this.jobRepository = jobRepository;
         this.applicationRepository = applicationRepository;
         this.employerProfileRepository = employerProfileRepository;
         this.employeeProfileRepository = employeeProfileRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -129,6 +135,7 @@ public class JobService {
     public ApplicationResponse apply(Long jobId, Long employeeProfileId, CreateApplicationRequest request) {
         Job job = jobRepository.findById(jobId)
             .orElseThrow(() -> new IllegalArgumentException("Job not found"));
+        // A job must still be open, and each employee may apply to it only once.
         if (job.getStatus() != JobStatus.OPEN) {
             throw new IllegalArgumentException("This job is no longer accepting applications");
         }
@@ -145,7 +152,10 @@ public class JobService {
         application.setCoverLetter(request.coverLetter().trim());
         application.setStatus(ApplicationStatus.APPLIED);
 
-        return toApplicationResponse(applicationRepository.save(application));
+        application = applicationRepository.save(application);
+        // Keep the employer notification in the same transaction as the application it describes.
+        notificationService.applicationReceived(application, applicationRepository.countByJobId(jobId));
+        return toApplicationResponse(application);
     }
 
     @Transactional
@@ -199,7 +209,12 @@ public class JobService {
             throw new IllegalArgumentException("Application does not belong to this job");
         }
 
-        application.setStatus(parseEmployerApplicationStatus(request.status()));
+        ApplicationStatus status = parseEmployerApplicationStatus(request.status());
+        if (application.getStatus() != status) {
+            application.setStatus(status);
+            // Avoid generating duplicate notifications when a status is saved without changing.
+            notificationService.applicationStatusChanged(application);
+        }
         return toEmployerApplicationResponse(applicationRepository.save(application));
     }
 
@@ -253,12 +268,14 @@ public class JobService {
     private Job requireEmployerJob(Long employerProfileId, Long jobId) {
         Job job = jobRepository.findById(jobId)
             .orElseThrow(() -> new IllegalArgumentException("Job not found"));
+        // Reuse this ownership check before employers view applicants or change/delete a job.
         if (!job.getEmployerProfile().getId().equals(employerProfileId)) {
             throw new IllegalArgumentException("This job does not belong to the employer");
         }
         return job;
     }
 
+    // Convert the authenticated account ID to its role-specific profile instead of trusting a client-supplied profile ID.
     private EmployerProfile requireEmployerProfile(Long userId) {
         return employerProfileRepository.findByUserId(userId)
             .orElseThrow(() -> new IllegalArgumentException("Employer profile not found"));

@@ -1,8 +1,9 @@
-package com.example.hireflow.job;
+package com.example.hireflow.job.entity;
 
 import java.time.LocalDateTime;
 
-import com.example.hireflow.employee.EmployeeProfile;
+import com.example.hireflow.employee.entity.EmployeeProfile;
+import com.example.hireflow.job.ApplicationStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
