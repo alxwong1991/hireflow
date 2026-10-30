@@ -14,6 +14,8 @@ import EmployerJobApplicationsPage from "../features/jobs/pages/EmployerJobAppli
 import CompanyProfilePage from "../features/jobs/pages/CompanyProfilePage";
 import ApplicantProfilePage from "../features/jobs/pages/ApplicantProfilePage";
 import NotificationsPage from "../features/notifications/pages/NotificationsPage";
+import ChatsPage from "../features/chat/pages/ChatsPage";
+import ChatPage from "../features/chat/pages/ChatPage";
 import RequireRole from "../features/auth/components/RequireRole";
 import PublicOnlyRoute from "../features/auth/components/PublicOnlyRoute";
 
@@ -51,6 +53,8 @@ export const router = createBrowserRouter([
           { path: "employee/profile", element: <EmployeeProfilePage /> },
           { path: "employee/applications", element: <EmployeeApplicationsPage /> },
           { path: "employee/notifications", element: <NotificationsPage /> },
+          { path: "employee/messages", element: <ChatsPage /> },
+          { path: "employee/messages/:applicationId", element: <ChatPage /> },
         ],
       },
       {
@@ -58,6 +62,8 @@ export const router = createBrowserRouter([
         children: [
           { path: "employer/profile", element: <EmployerProfilePage /> },
           { path: "employer/notifications", element: <NotificationsPage /> },
+          { path: "employer/messages", element: <ChatsPage /> },
+          { path: "employer/messages/:applicationId", element: <ChatPage /> },
           { path: "employer/jobs", element: <EmployerJobsPage /> },
           { path: "employer/jobs/new", element: <CreateJobPage /> },
           {

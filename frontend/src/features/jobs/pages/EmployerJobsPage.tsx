@@ -25,6 +25,7 @@ function EmployerJobsPage() {
     mutationFn: (jobId: number) => updateJobStatus(jobId, { status: "CLOSED" }),
     onSuccess: async (closedJob) => {
       await queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      await queryClient.invalidateQueries({ queryKey: ["chats"] });
       await showSuccessAlert(
         `"${closedJob.title}" is no longer accepting applications.`,
         "Job closed",
@@ -42,8 +43,10 @@ function EmployerJobsPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["jobs"] });
       await queryClient.invalidateQueries({ queryKey: ["applications"] });
+      await queryClient.invalidateQueries({ queryKey: ["chats"] });
+      await queryClient.invalidateQueries({ queryKey: ["notifications"] });
       await showSuccessAlert(
-        "The closed job and its applications have been deleted.",
+        "The closed job, its applications, chats, and related notifications have been deleted.",
         "Job deleted",
       );
     },

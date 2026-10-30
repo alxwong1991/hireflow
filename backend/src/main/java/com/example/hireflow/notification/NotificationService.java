@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.hireflow.job.entity.JobApplication;
+import com.example.hireflow.chat.entity.ChatMessage;
 import com.example.hireflow.notification.dto.NotificationPageResponse;
 import com.example.hireflow.notification.dto.NotificationResponse;
 import com.example.hireflow.notification.entity.Notification;
@@ -46,6 +47,25 @@ public class NotificationService {
             ),
             "/employee/applications#application-" + application.getId()
         ));
+    }
+
+    public void chatMessageReceived(JobApplication application, ChatMessage message) {
+        var job = application.getJob();
+        Long employeeId = application.getEmployeeProfile().getUser().getId();
+        boolean fromEmployee = message.getSenderId().equals(employeeId);
+        Long recipientId = fromEmployee ? job.getEmployerProfile().getUser().getId() : employeeId;
+        String sender = fromEmployee ? application.getEmployeeProfile().getFullName()
+            : job.getEmployerProfile().getCompanyName();
+        var notification = new Notification(
+            recipientId, job.getId(), "%s sent you a message about %s.".formatted(sender, job.getTitle()),
+            (fromEmployee ? "/employer" : "/employee") + "/messages/" + application.getId()
+        );
+        notification.setChatMessageId(message.getId());
+        notificationRepository.save(notification);
+    }
+
+    public void markChatRead(Long userId, Long applicationId, Long throughMessageId) {
+        notificationRepository.markChatRead(userId, applicationId, throughMessageId);
     }
 
     @Transactional(readOnly = true)

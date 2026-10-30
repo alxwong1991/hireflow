@@ -8,4 +8,5 @@ export default interface ApplicationResponse {
   coverLetter: string;
   status: ApplicationStatus;
   appliedAt: string;
+  chatEnabled: boolean;
 }

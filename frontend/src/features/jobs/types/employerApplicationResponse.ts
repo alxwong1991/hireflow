@@ -9,4 +9,5 @@ export default interface EmployerApplicationResponse {
   coverLetter: string;
   status: ApplicationStatus;
   appliedAt: string;
+  chatEnabled: boolean;
 }

@@ -22,6 +22,9 @@ public class Notification {
     @Column(name = "job_id", nullable = false)
     private Long jobId;
 
+    @Column(name = "chat_message_id")
+    private Long chatMessageId;
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
@@ -45,6 +48,7 @@ public class Notification {
     }
 
     public Long getId() { return id; }
+    public void setChatMessageId(Long chatMessageId) { this.chatMessageId = chatMessageId; }
     public String getMessage() { return message; }
     public String getTargetPath() { return targetPath; }
     public LocalDateTime getCreatedAt() { return createdAt; }

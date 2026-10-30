@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Bell, BriefcaseBusiness, ClipboardList, LogIn, LogOut, Search, UserRound, UserRoundPlus } from "lucide-react";
+import { Bell, BriefcaseBusiness, ClipboardList, LogIn, LogOut, MessageSquare, Search, UserRound, UserRoundPlus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../features/auth/authContextValue";
 import { profilePathForRole } from "../../features/auth/authRoutes";
@@ -70,7 +70,7 @@ function Navbar() {
             {user.displayName}
           </span>
         )}
-        <nav aria-label="Main navigation" className={`grid w-full items-stretch gap-1 lg:w-auto ${role ? "grid-cols-5" : "grid-cols-3"}`}>
+        <nav aria-label="Main navigation" className={`grid w-full items-stretch gap-1 lg:w-auto ${role ? "grid-cols-6" : "grid-cols-3"}`}>
           <NavigationItem to="/jobs" icon={Search} label="Browse jobs" />
           {role ? (
             <>
@@ -81,6 +81,7 @@ function Navbar() {
                 <NavigationItem to="/employee/applications" icon={ClipboardList} label="Applications" />
               )}
               {user && <NotificationBell email={user.email} role={user.role} />}
+              <NavigationItem to={`/${role.toLowerCase()}/messages`} icon={MessageSquare} label="Messages" />
               <NavigationItem to={profilePathForRole(role)} icon={UserRound} label="Profile" />
               <button
                 type="button"

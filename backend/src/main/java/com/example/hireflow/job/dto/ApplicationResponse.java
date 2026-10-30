@@ -9,6 +9,7 @@ public record ApplicationResponse(
     String companyName,
     String coverLetter,
     String status,
-    LocalDateTime appliedAt
+    LocalDateTime appliedAt,
+    boolean chatEnabled
 ) {
 }

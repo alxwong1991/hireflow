@@ -135,7 +135,36 @@ Use **Logout** to end a session manually, especially on a shared computer.
   not backfilled: notifications start with new applications/status changes after this feature is installed.
 - Permanently deleting a closed job also removes its applications and related notifications, avoiding links
   to deleted records. Closing a job alone does not remove notifications or application history.
-- Backend startup applies Flyway migration V5 automatically; restart the backend before using the feature.
+- Backend startup applies Flyway migrations automatically; restart the backend before using new features.
+
+### Application chats
+
+- Both roles have a **Messages** inbox in the navbar. Each chat is private to the applicant and the
+  employer who owns the job; applying alone does not unlock it.
+- Setting an application to **Reviewing**, **Shortlisted**, or **Accepted** unlocks its chat and shows
+  **Open chat** on both application lists. Once unlocked, history stays available even if the status later
+  changes to Applied or Rejected. **Rejected makes the chat read-only for both participants**: messages
+  can still be read and their notifications cleared, but neither side can send new messages.
+  Changing back to Reviewing, Shortlisted, or Accepted resumes messaging. Returning an already unlocked
+  application to Applied preserves its existing messaging behavior. Existing applications currently in an eligible status are unlocked
+  by migration V6; earlier status history is not available for backfilling.
+- Users can send text messages of up to 5,000 characters, including questions, email addresses, phone
+  numbers, and CV links. Direct file uploads are not supported. Share only information you are
+  comfortable disclosing to the other participant.
+- Each new message adds one unread notification for the other participant, linking directly to the chat.
+  Viewing the conversation marks its message notifications through the newest fetched message as read without
+  consuming unrelated application/status notifications or newer messages not yet fetched. The existing notification bell
+  still refreshes every 30 seconds; open conversations refresh every 5 seconds (not WebSocket push).
+- Messages are stored in the database and survive reloads and logins. Conversations load the latest
+  50 messages first; **Load older messages** retrieves earlier history.
+- Closing a job preserves existing chats and their application-based messaging permissions; rejected
+  applications stay read-only even when the job is closed. Permanently deleting a closed job also permanently
+  removes its applications, messages, and associated notifications.
+- API: authenticated participants use `GET /api/chats`, `GET /api/chats/{applicationId}`,
+  `GET /api/chats/{applicationId}/messages?beforeId={messageId}`,
+  `POST /api/chats/{applicationId}/messages` with `{"body":"..."}`, and
+  `PATCH /api/chats/{applicationId}/read?throughMessageId={messageId}`.
+- Backend startup applies Flyway migration V6 automatically. Restart the backend before using chat.
 
 ### How sessions work
 
@@ -157,7 +186,7 @@ Use **Logout** to end a session manually, especially on a shared computer.
 
 ### Application architecture
 
-- Backend code is organized by feature (`auth`, `job`, `employee`, `employer`, `notification`); controllers,
+- Backend code is organized by feature (`auth`, `job`, `employee`, `employer`, `notification`, `chat`); controllers,
   services, and repositories stay with their feature, and Java package names match their source folders.
   Feature-specific transport types live in `dto` subpackages and persistence models in `entity` subpackages.
 - Frontend feature modules own their pages, API calls, types, and feature-specific queries. `app` composes

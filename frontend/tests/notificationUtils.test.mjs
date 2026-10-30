@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   removeNotification,
+  invalidateTargetQueries,
   isNotificationTargetValid,
   unreadCountLabel,
   unreadBadgeText,
@@ -61,6 +62,26 @@ test("marking a notification read decrements the page-zero count only once", () 
 
   const afterRepeatedRead = updateNotificationRead(afterFirstRead, updated);
   assert.equal(afterRepeatedRead.pages[0].unreadCount, 0);
+});
+
+test("chat notification destinations are role-specific and require positive application IDs", () => {
+  for (const [role, prefix] of [["EMPLOYEE", "employee"], ["EMPLOYER", "employer"]]) {
+    assert.equal(isNotificationTargetValid(`/${prefix}/messages/42`, role), true);
+    for (const suffix of ["0", "-1", "42/extra", "42?redirect=https://example.com"]) {
+      assert.equal(isNotificationTargetValid(`/${prefix}/messages/${suffix}`, role), false);
+    }
+    const otherPrefix = prefix === "employee" ? "employer" : "employee";
+    assert.equal(isNotificationTargetValid(`/${otherPrefix}/messages/42`, role), false);
+  }
+});
+
+test("opening a chat notification invalidates chat data before navigating", async () => {
+  const invalidations = [];
+  const client = {
+    invalidateQueries: async (filter) => { invalidations.push(filter); },
+  };
+  await Promise.all(invalidateTargetQueries(client, "/employee/messages/42", "EMPLOYEE"));
+  assert.deepEqual(invalidations, [{ queryKey: ["chats"] }]);
 });
 
 test("deleting a read notification removes it without changing unread counts", () => {

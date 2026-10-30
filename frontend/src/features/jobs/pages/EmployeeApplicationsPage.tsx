@@ -16,6 +16,7 @@ function EmployeeApplicationsPage() {
   const { data: applications = [], isLoading, error } = useQuery({
     queryKey: ["applications", "employee"],
     queryFn: getEmployeeApplications,
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {
@@ -74,12 +75,16 @@ function EmployeeApplicationsPage() {
                 {formatApplicationStatus(application.status)}
               </span>
               <Link className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-[14px] border border-slate-400/25 bg-slate-400/12 px-[22px] font-black text-slate-200 transition duration-200 hover:bg-slate-400/20 disabled:cursor-not-allowed disabled:opacity-65 disabled:transform-none" to={`/jobs/${application.jobId}`}>View job</Link>
+              {application.chatEnabled && (
+                <Link className="rounded-xl bg-blue-600 px-4 py-3 font-bold text-white hover:bg-blue-700" to={`/employee/messages/${application.id}`}>Open chat</Link>
+              )}
               </div>
             </div>
             <div className="mt-5 rounded-2xl border border-slate-400/20 bg-slate-950/70 p-[18px]">
               <h3>Submitted cover letter</h3>
               <p>{application.coverLetter}</p>
               <small>Applications are final. Your submitted cover letter cannot be changed.</small>
+              {!application.chatEnabled && <p className="mb-0 text-sm text-slate-400">Chat unlocks when the employer starts reviewing, shortlists, or accepts your application.</p>}
             </div>
           </article>
         ))}

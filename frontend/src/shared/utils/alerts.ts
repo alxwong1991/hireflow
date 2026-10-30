@@ -32,7 +32,7 @@ export async function confirmJobDeletion(jobTitle: string): Promise<boolean> {
     ...alertTheme,
     icon: "warning",
     title: "Delete this closed job?",
-    text: `"${jobTitle}" and its applications will be permanently deleted.`,
+    text: `"${jobTitle}", its applications, chats, and related notifications will be permanently deleted.`,
     showCancelButton: true,
     confirmButtonText: "Delete job",
     cancelButtonText: "Keep job",

@@ -54,6 +54,7 @@ function EmployerJobApplicationsPage() {
             application.id === updated.id ? updated : application,
           ),
       );
+      await queryClient.invalidateQueries({ queryKey: ["chats"] });
       await showSuccessAlert(
         `Application status changed to ${updated.status.toLowerCase()}.`,
         "Status updated",
@@ -129,6 +130,9 @@ function EmployerJobApplicationsPage() {
                 >
                   View applicant profile
                 </Link>
+                {application.chatEnabled && (
+                  <Link className="ml-3 inline-flex min-h-9 items-center rounded-lg bg-blue-600 px-3.5 text-sm font-bold text-white hover:bg-blue-700" to={`/employer/messages/${application.id}`}>Open chat</Link>
+                )}
               </div>
               <span className={`rounded-full px-2.5 py-[7px] text-xs font-extrabold ${applicationStatusClass(application.status)}`}>
                 {formatApplicationStatus(application.status)}
@@ -156,7 +160,7 @@ function EmployerJobApplicationsPage() {
             <div className="mt-5 grid grid-cols-[minmax(0,1fr)_minmax(220px,320px)] items-center gap-6 border-t border-slate-400/20 pt-5 max-[700px]:grid-cols-1 max-[700px]:gap-3">
               <div className="min-w-0">
                 <h3 className="mb-1">Application decision</h3>
-                <p className="mb-0 text-sm text-slate-400">The employee will see this status in their application tracker.</p>
+                <p className="mb-0 text-sm text-slate-400">Reviewing, Shortlisted, or Accepted unlocks private chat. Rejected makes existing chats read-only; changing back resumes messaging. The employee will see the status in their tracker.</p>
               </div>
               <select
                 className="w-full"

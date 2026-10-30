@@ -17,8 +17,8 @@ export function isNotificationTargetValid(
 ): boolean {
   // Notifications can only navigate to known role-specific pages, never an arbitrary server-provided URL.
   return role === "EMPLOYEE"
-    ? /^\/employee\/applications#application-\d+$/.test(targetPath)
-    : /^\/employer\/jobs\/\d+\/applications$/.test(targetPath);
+    ? /^\/employee\/(?:applications#application-\d+|messages\/[1-9]\d*)$/.test(targetPath)
+    : /^\/employer\/(?:jobs\/\d+\/applications|messages\/[1-9]\d*)$/.test(targetPath);
 }
 
 export function updateNotificationRead(
@@ -65,6 +65,9 @@ export function invalidateTargetQueries(
   targetPath: string,
   role: UserRole,
 ): Promise<void>[] {
+  if (new RegExp(`^/${role.toLowerCase()}/messages/[1-9]\\d*$`).test(targetPath)) {
+    return [queryClient.invalidateQueries({ queryKey: ["chats"] })];
+  }
   if (role === "EMPLOYEE" && targetPath.startsWith("/employee/applications")) {
     return [queryClient.invalidateQueries({ queryKey: ["applications", "employee"] })];
   }

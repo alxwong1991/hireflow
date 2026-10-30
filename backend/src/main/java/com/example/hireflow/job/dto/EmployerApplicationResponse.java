@@ -10,6 +10,7 @@ public record EmployerApplicationResponse(
     String employeeSummary,
     String coverLetter,
     String status,
-    LocalDateTime appliedAt
+    LocalDateTime appliedAt,
+    boolean chatEnabled
 ) {
 }

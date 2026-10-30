@@ -41,6 +41,9 @@ public class JobApplication {
     @Column(nullable = false)
     private ApplicationStatus status;
 
+    @Column(name = "chat_enabled", nullable = false)
+    private boolean chatEnabled;
+
     @Column(name = "applied_at", nullable = false)
     private LocalDateTime appliedAt;
 
@@ -65,10 +68,22 @@ public class JobApplication {
     public EmployeeProfile getEmployeeProfile() { return employeeProfile; }
     public String getCoverLetter() { return coverLetter; }
     public ApplicationStatus getStatus() { return status; }
+    public boolean isChatEnabled() { return chatEnabled; }
+    // Rejection disables sending but keeps the unlocked conversation available as read-only history.
+    public boolean canSendChatMessages() {
+        return chatEnabled && status != ApplicationStatus.REJECTED;
+    }
     public LocalDateTime getAppliedAt() { return appliedAt; }
 
     public void setJob(Job job) { this.job = job; }
     public void setEmployeeProfile(EmployeeProfile employeeProfile) { this.employeeProfile = employeeProfile; }
     public void setCoverLetter(String coverLetter) { this.coverLetter = coverLetter; }
-    public void setStatus(ApplicationStatus status) { this.status = status; }
+    public void setStatus(ApplicationStatus status) {
+        this.status = status;
+        // Unlocking is sticky so later status changes do not erase an existing conversation.
+        if (status == ApplicationStatus.REVIEWING || status == ApplicationStatus.SHORTLISTED
+                || status == ApplicationStatus.ACCEPTED) {
+            chatEnabled = true;
+        }
+    }
 }

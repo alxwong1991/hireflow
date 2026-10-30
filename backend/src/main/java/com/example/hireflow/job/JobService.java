@@ -203,7 +203,7 @@ public class JobService {
         UpdateApplicationStatusRequest request
     ) {
         requireEmployerJob(employerProfileId, jobId);
-        JobApplication application = applicationRepository.findById(applicationId)
+        JobApplication application = applicationRepository.findByIdForUpdate(applicationId)
             .orElseThrow(() -> new IllegalArgumentException("Application not found"));
         if (!application.getJob().getId().equals(jobId)) {
             throw new IllegalArgumentException("Application does not belong to this job");
@@ -325,7 +325,8 @@ public class JobService {
             job.getEmployerProfile().getCompanyName(),
             application.getCoverLetter(),
             application.getStatus().name(),
-            application.getAppliedAt()
+            application.getAppliedAt(),
+            application.isChatEnabled()
         );
     }
 
@@ -339,7 +340,8 @@ public class JobService {
             employee.getSummary(),
             application.getCoverLetter(),
             application.getStatus().name(),
-            application.getAppliedAt()
+            application.getAppliedAt(),
+            application.isChatEnabled()
         );
     }
 }
