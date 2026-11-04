@@ -8,7 +8,7 @@ HireFlow is a full-stack job tracking application built with a Spring Boot backe
 
 ### Backend
 
-- Java 21
+- Java 25 (LTS)
 - Spring Boot
 - Maven
 - Spring Data JPA
@@ -37,7 +37,7 @@ HireFlow is a full-stack job tracking application built with a Spring Boot backe
 Install the following before running the project locally:
 
 - Git
-- Java 21
+- Java 25 (LTS)
 - Node.js 24 LTS (recommended; the frontend tests use native TypeScript support)
 - npm
 - Podman
@@ -406,7 +406,7 @@ Check Maven and Java:
 ./mvnw --version
 ```
 
-Make sure Maven is using Java 21.
+Make sure Maven is using Java 25.
 
 Start the backend:
 
@@ -847,12 +847,12 @@ cd backend
 ./mvnw --version
 ```
 
-If it does not show Java 21, fix your Java environment.
+If it does not show Java 25, fix your Java environment.
 
-Temporary Java 21 fix:
+Temporary Java 25 fix:
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64
 export PATH=$JAVA_HOME/bin:$PATH
 ```
 
