@@ -1,53 +1,86 @@
 # HireFlow
 
-HireFlow is a job application platform where employers post jobs and employees find and apply for them.
+A job application web app where employees find jobs and employers manage listings
+and applicants. Built as a personal learning project.
 
 ## Features
 
 - Browse open jobs and company profiles without signing in.
-- Create employee or employer accounts with role-based access.
-- Manage profiles, job listings, applications, and application statuses.
-- Get notifications for applications, status changes, and chat messages.
-- Chat privately when an application is eligible.
+- Register as an employee or employer, with role-specific profiles and workspaces.
+- Create job listings, apply with a cover letter, and manage application statuses.
+- Receive notifications for applications, status changes, and chat messages.
+- Chat privately when an application reaches an eligible status.
 
 ## Tech Stack
 
-- **Frontend:** React, TypeScript, Vite
-- **Backend:** Java 25, Spring Boot, Spring Data JPA
-- **Database:** PostgreSQL 16, Flyway
-- **Local services:** Podman Compose, Adminer
+| Area | Technologies |
+| --- | --- |
+| Frontend | React, TypeScript, Vite |
+| Backend | Java 25, Spring Boot, Spring Data JPA |
+| Database | PostgreSQL 16, Flyway |
+| Local development | Podman Compose, Adminer |
+| Testing | JUnit, Node.js test runner, Oxlint |
 
-## Project Structure
+## Architecture
+
+The React frontend communicates with the Spring Boot API. The API handles
+authentication, application rules, and database access.
 
 ```text
-backend/     Spring Boot API and Flyway migrations
-frontend/    React application and frontend tests
-docker-compose.yml
-             Local PostgreSQL and Adminer services
+React UI → Feature API → Shared HTTP client
+                            ↓ REST / JSON
+Spring Security → Controller → Service → Repository → PostgreSQL
 ```
 
-Backend code is organized by feature. Frontend feature modules contain their pages, API calls, and types.
+- **Frontend:** feature modules own their pages, API calls, and types.
+- **Backend:** feature-organized packages contain controllers, services,
+  repositories, DTOs, and entities.
+- **Database:** PostgreSQL stores application data; Flyway migrations run on
+  backend startup.
 
-## Run Locally
+### Project Structure
 
-### Requirements
+```text
+backend/
+  src/main/java/.../hireflow/  # Feature packages and API
+  src/main/resources/          # Configuration and Flyway migrations
+  src/test/                    # Backend integration tests
+frontend/
+  src/app/                     # App shell and routes
+  src/features/                # Feature pages, APIs, and types
+  src/lib/                     # Shared API client
+  tests/                       # Frontend tests
+docker-compose.yml             # Local PostgreSQL and Adminer
+```
+
+## Local Setup
+
+### 1. Prerequisites
 
 - Java 25 (LTS)
 - Node.js 24 LTS and npm
-- Podman and Podman Compose
+- Podman with a Compose provider
 
-### 1. Start the database
+### 2. Clone the repository
+
+```bash
+git clone https://github.com/alxwong1991/hireflow.git
+cd hireflow
+```
+
+### 3. Start PostgreSQL
 
 From the project root:
 
 ```bash
-podman compose up -d
+podman compose up -d postgres
 ```
 
-PostgreSQL is available at `localhost:5432`. Adminer is available at <http://localhost:8081>.
-For local development, the database credentials are `admin` / `admin` and the database name is `hireflow_db`.
+The local database is `hireflow_db` on port `5432`, with the development
+credentials `admin` / `admin`. Adminer is available at <http://localhost:8081>;
+use `postgres` as its server name.
 
-### 2. Start the backend
+### 4. Run the backend
 
 In a terminal:
 
@@ -56,10 +89,10 @@ cd backend
 ./mvnw spring-boot:run
 ```
 
-The API runs at <http://localhost:8080>. Flyway applies database migrations on startup.
+The API runs at <http://localhost:8080>. Flyway applies migrations on startup.
 The `GET /health` endpoint checks backend and database connectivity.
 
-### 3. Start the frontend
+### 5. Run the frontend
 
 In another terminal:
 
@@ -69,20 +102,30 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:5173>. The frontend uses `http://localhost:8080/api` by default.
-Set `VITE_API_BASE_URL` to use a different API URL. For a different frontend origin, configure
-the backend's `CORS_ALLOWED_ORIGINS`.
+Open <http://localhost:5173>. By default, the frontend calls
+`http://localhost:8080/api`. Set `VITE_API_BASE_URL` to use another API URL;
+configure `CORS_ALLOWED_ORIGINS` if the frontend uses a different origin.
 
-## Tests and Build
+## Try the App
 
-Backend tests require the local PostgreSQL service:
+1. Register as an employee or employer.
+2. Complete the role-specific profile.
+3. Employers can create a job and review applicants; employees can browse jobs
+   and apply with a cover letter.
+4. Update an application status to explore notifications and eligible chats.
+
+Visitors can browse open jobs, but need an employee account to apply.
+
+## Tests
+
+Backend integration tests require the local PostgreSQL database:
 
 ```bash
 cd backend
 ./mvnw test
 ```
 
-Frontend checks:
+Frontend tests, lint, and production build:
 
 ```bash
 cd frontend
@@ -91,11 +134,13 @@ npm run lint
 npm run build
 ```
 
-## Configuration
+## Configuration and Security
 
-Backend settings are in `backend/src/main/resources/application.properties`. The database URL,
-username, and password are configured there; `DATABASE_URL` and `DATABASE_USERNAME` can override
-the local defaults. Set a strong `JWT_SECRET` for deployments; `CORS_ALLOWED_ORIGINS` configures
-allowed browser origins.
+Backend defaults and environment-variable overrides are in
+`backend/src/main/resources/application.properties`. Set a strong `JWT_SECRET`
+and appropriate database credentials and `CORS_ALLOWED_ORIGINS` for deployments.
+Do not use the local database credentials or development JWT default in production.
 
-Do not use the example database credentials or JWT defaults in production.
+JWTs last 30 minutes by default. The browser renews an active session and ends it
+after 30 minutes without activity. Sign-out removes the browser's token; it does
+not revoke a copied token before expiry.
