@@ -30,6 +30,45 @@ HireFlow is a full-stack job tracking application built with a Spring Boot backe
 - Podman Compose
 - Git
 
+## Project Structure
+
+```text
+hireflow/
+├── backend/
+│   ├── .mvn/                         Maven Wrapper configuration
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/example/hireflow/
+│   │   │   │   ├── auth/             Authentication and JWT
+│   │   │   │   ├── chat/             Application chats
+│   │   │   │   ├── common/           Shared controllers and API handling
+│   │   │   │   ├── config/           Security, CORS, and application config
+│   │   │   │   ├── employee/         Employee profiles
+│   │   │   │   ├── employer/         Employer profiles
+│   │   │   │   ├── job/              Jobs and applications
+│   │   │   │   ├── notification/     Notifications
+│   │   │   │   └── user/             User model and repository
+│   │   │   └── resources/
+│   │   │       └── db/migration/     Flyway database migrations
+│   │   └── test/                     Backend integration tests
+│   ├── mvnw                          Maven Wrapper (Unix)
+│   ├── mvnw.cmd                      Maven Wrapper (Windows)
+│   └── pom.xml                       Maven dependencies and build
+├── frontend/
+│   ├── src/
+│   │   ├── app/                      App shell, layouts, and routes
+│   │   ├── features/                 Feature pages, APIs, and types
+│   │   ├── lib/                      Shared API client
+│   │   ├── shared/                   Shared UI utilities
+│   │   └── assets/                   Frontend assets
+│   ├── tests/                        Frontend tests
+│   └── package.json                  Frontend dependencies and scripts
+├── docker-compose.yml                Local PostgreSQL and Adminer services
+└── README.md                         Project documentation
+```
+
+Backend feature packages keep their controllers, services, repositories, DTOs, and entities together. Frontend feature modules similarly group feature-specific pages, API calls, and types.
+
 ---
 
 ## Prerequisites
